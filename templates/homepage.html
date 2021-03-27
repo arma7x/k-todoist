@@ -1,0 +1,44 @@
+<div class="kui-flex-wrap">
+  <style>
+  @media only screen and (orientation : portrait) {
+    .img-holder-hp {
+      margin-left: -30px;
+      height: 160px;
+      width: 160px;
+    }
+  }
+  @media screen and (orientation: landscape) {
+    .img-holder-hp {
+      margin-left: -30px;
+      height: 80px;
+      width: 80px;
+    }
+  }
+  </style>
+  {{#TODOIST_ACCESS_TOKEN}}
+    {{#empty}}
+      <div style="text-align:center;white-space:pre-wrap!important;word-break:break-word!important;font-weight:bold;">
+        <img class="img-holder-hp" src="/img/empty.png"/>
+        <div>No Project</div>
+      </div>
+    {{/empty}}
+    {{^empty}}
+      <ul class="kui-list kai-container">
+        {{#projects}}
+        <li class="homepageNav" style="padding-left:5px;padding:right:5px;border-left:5px solid {{ color_hex }};border-bottom:1px dashed #320374;"  @click='selected()'>
+          <div style="width:100%;height:92%;display:flex;flex-direction:column;justify-content:space-between;">
+            <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{ name }}</h5>
+            <small style="float:right;text-align:right;">#{{ id }}</small>
+          </div>
+        </li>
+        {{/projects}}
+      </ul>
+    {{/empty}}
+  {{/TODOIST_ACCESS_TOKEN}}
+  {{^TODOIST_ACCESS_TOKEN}}
+      <div style="text-align:center;white-space:pre-wrap!important;word-break:break-word!important;font-weight:bold;">
+        <img class="img-holder-hp" src="/img/login.png"/>
+        <div>Please login your Todoist</div>
+      </div>
+  {{/TODOIST_ACCESS_TOKEN}}
+</div>

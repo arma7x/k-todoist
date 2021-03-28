@@ -283,6 +283,17 @@ window.addEventListener("load", function() {
         }
       }
     },
+    softKeyInputFocusText: { left: 'Done', center: '', right: '' },
+    softKeyInputFocusListener: {
+      left: function() {
+        if (document.activeElement.tagName === 'INPUT') {
+          document.activeElement.blur();
+          this.dPadNavListener.arrowDown();
+        }
+      },
+      center: function() {},
+      right: function() {}
+    },
     dPadNavListener: {
       arrowUp: function() {
         this.navigateListNav(-1);
@@ -323,8 +334,13 @@ window.addEventListener("load", function() {
           this.setData({ TODOIST_ACCESS_TOKEN: TODOIST_ACCESS_TOKEN });
           if (window['TODOIST_API'] == null) {
             window['TODOIST_API'] = new Todoist(TODOIST_ACCESS_TOKEN, onCompleteSync);
+            this.methods.sync();
+          } else {
+            localforage.getItem('TODOIST_SYNC')
+            .then((TODOIST_SYNC) => {
+              this.methods.listenStateSync(TODOIST_SYNC);
+            })
           }
-          this.methods.sync();
         }
       });
     },

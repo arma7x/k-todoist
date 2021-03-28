@@ -9,6 +9,55 @@ window.addEventListener("load", function() {
     'TODOIST_SYNC': {},
   });
 
+  const initTodoistWebsocket = function() {
+    localforage.getItem('TODOIST_SYNC')
+    .then((TODOIST_SYNC) => {
+      if (TODOIST_SYNC != null) {
+        if (TODOIST_SYNC.user != null) {
+          if (TODOIST_SYNC.user.websocket_url != null) {
+            console.log('WS', TODOIST_SYNC.user.websocket_url);
+            const ws = new WebSocket(TODOIST_SYNC.user.websocket_url);
+            ws.onclose = function() {
+              console.log('WS', 'onclose');
+            }
+            ws.onerror = function() {
+              console.log('WS', 'onerror');
+            }
+            ws.onmessage = function(msg) {
+              console.log('WS', 'onmessage', msg.data);
+              if (msg.data != null) {
+                try {
+                  const data = JSON.parse(msg.data);
+                  if (data.type === "sync_needed") {
+                    if (window['TODOIST_API'] != null ) {
+                      window['TODOIST_API'].sync()
+                      console.log(data.type);
+                    }
+                  }
+                } catch (e) {
+                  
+                }
+              }
+            }
+            ws.onopen = function() {
+              console.log('WS', 'onopen');
+            }
+          }
+        }
+      }
+    })
+  }
+
+  initTodoistWebsocket();
+
+  const onCompleteSync = function(data) {
+    localforage.setItem('TODOIST_SYNC', data)
+    .then((TODOIST_SYNC) => {
+      state.setState('TODOIST_SYNC', TODOIST_SYNC);
+      console.log('onCompleteSync');
+    })
+  }
+
   function getURLParam(key, target) {
     var values = [];
     if (!target) target = location.href;
@@ -149,12 +198,116 @@ window.addEventListener("load", function() {
     }));
   }
 
+  const projectPage = function ($router, project_id) {}
+
+  const taskPage = function ($router, project_id) {}
+
+  const addProjectPage = new Kai({
+    name: 'addProjectPage',
+    data: {
+      title: '',
+      favorite: 'No',
+      color_hex: '#b8b8b8',
+      color_name: 'Grey',
+      color_index: 48
+    },
+    verticalNavClass: '.addTaskNav',
+    templateUrl: document.location.origin + '/templates/addProject.html',
+    mounted: function() {
+      this.$router.setHeaderTitle('Add Project');
+    },
+    unmounted: function() {},
+    methods: {
+      setFavorite: function() {
+        var menu = [
+          { "text": "Yes", "checked": false },
+          { "text": "No", "checked": false }
+        ];
+        const idx = menu.findIndex((opt) => {
+          return opt.text === this.data.favorite;
+        });
+        this.$router.showSingleSelector('Favorite', menu, 'Select', (selected) => {
+          this.setData({ favorite: selected.text });
+        }, 'Cancel', null, undefined, idx);
+      },
+      setColor: function() {
+        var colors = [];
+        for (var i in Todoist.Colors) {
+          const name = Todoist.Colors[i][0];
+          const words = name.split("_");
+          for (let i = 0; i < words.length; i++) {
+            words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+          }
+          colors.push({ "text": words.join(" "), "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
+        }
+        const idx = colors.findIndex((opt) => {
+          return opt.hex === this.data.color_hex;
+        });
+        this.$router.showSingleSelector('Color', colors, 'Select', (selected) => {
+          this.setData({ color_name: selected.text, color_hex: selected.hex, color_index: parseInt(selected.index) });
+        }, 'Cancel', null, undefined, idx);
+      }
+    },
+    softKeyText: { left: 'Cancel', center: 'SELECT', right: 'Add' },
+    softKeyListener: {
+      left: function() {
+        this.$router.pop();
+      },
+      center: function() {
+        const listNav = document.querySelectorAll(this.verticalNavClass);
+        if (this.verticalNavIndex > -1) {
+          if (listNav[this.verticalNavIndex]) {
+            listNav[this.verticalNavIndex].click();
+          }
+        }
+      },
+      right: function() {
+        if (window['TODOIST_API']) {
+          this.$router.showLoading();
+          window['TODOIST_API'].createProject(document.getElementById('project_title').value, null, this.data.color_index, (this.data.favorite === 'Yes' || false))
+          .then(() => {
+            this.$router.showToast('Success');
+          })
+          .catch((e) => {
+            var msg;
+            if (e.response) {
+              msg = e.response.toString();
+            } else {
+              msg = e.toString();
+            }
+            this.$router.showToast(msg);
+          })
+          .finally(() => {
+            this.$router.hideLoading();
+          });
+        }
+      }
+    },
+    dPadNavListener: {
+      arrowUp: function() {
+        this.navigateListNav(-1);
+        this.data.title = document.getElementById('project_title').value;
+      },
+      arrowRight: function() {
+        // this.navigateTabNav(-1);
+      },
+      arrowDown: function() {
+        this.navigateListNav(1);
+        this.data.title = document.getElementById('project_title').value;
+      },
+      arrowLeft: function() {
+        // this.navigateTabNav(1);
+      },
+    }
+  });
+
   const homepage = new Kai({
     name: 'homepage',
     data: {
       title: 'homepage',
       offset: -1,
       projects: [],
+      projectsVerticalNavIndexID: 0,
       empty: true,
       TODOIST_ACCESS_TOKEN: null
     },
@@ -168,7 +321,9 @@ window.addEventListener("load", function() {
       .then((TODOIST_ACCESS_TOKEN) => {
         if (TODOIST_ACCESS_TOKEN != null) {
           this.setData({ TODOIST_ACCESS_TOKEN: TODOIST_ACCESS_TOKEN });
-          window['TODOIST_API'] = new Todoist(TODOIST_ACCESS_TOKEN, this.methods.onCompleteSync);
+          if (window['TODOIST_API'] == null) {
+            window['TODOIST_API'] = new Todoist(TODOIST_ACCESS_TOKEN, onCompleteSync);
+          }
           this.methods.sync();
         }
       });
@@ -192,12 +347,6 @@ window.addEventListener("load", function() {
             this.$router.hideLoading();
           })
         }
-      },
-      onCompleteSync: function(data) {
-        localforage.setItem('TODOIST_SYNC', data)
-        .then((TODOIST_SYNC) => {
-          this.$state.setState('TODOIST_SYNC', TODOIST_SYNC);
-        })
       },
       listenStateSync: function(data) {
         var projects = [];
@@ -223,116 +372,34 @@ window.addEventListener("load", function() {
           var title = 'Menu';
           var menu = [
             { "text": "Help & Support" },
-            { "text": "Login" },
-            { "text": "Web Browser" },
-            { "text": "Saved Reader View" },
-            { "text": "Bookmarks" },
-            { "text": "History" },
-            { "text": "Clear History" }
+            { "text": "Login" }
           ];
           if (res) {
             title = res.username;
             menu = [
               { "text": "Help & Support" },
-              { "text": "Refresh" },
-              { "text": "Web Browser" },
-              { "text": "Saved Reader View" },
-              { "text": "Bookmarks" },
-              { "text": "History" },
-              { "text": "Clear History" },
+              { "text": "Sync" },
+              { "text": "Add Project" },
               { "text": "Logout" }
             ];
           }
           this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
             if (selected.text === 'Login') {
               loginPage(this.$router);
-            } else if (selected.text === 'Web Browser') {
-              this.$router.push('browser');
+            } else if (selected.text === 'Add Project') {
+              this.$router.push('addProjectPage');
             } else if (selected.text === 'Logout') {
+              window['TODOIST_API'] = null;
               localforage.removeItem('TODOIST_ACCESS_TOKEN');
+              localforage.removeItem('TODOIST_SYNC');
               this.verticalNavIndex = 0;
               this.$router.setSoftKeyRightText('');
               this.setData({ TODOIST_ACCESS_TOKEN: null });
               this.setData({ projects: [], offset: -1 });
-            } else if (selected.text === 'Refresh') {
-              this.verticalNavIndex = 0;
-              this.setData({ projects: [] });
+            } else if (selected.text === 'Sync') {
               this.methods.sync();
-            } else if (selected.text === 'Bookmarks') {
-              localforage.getItem('POCKET_BOOKMARKS')
-              .then((bookmarks) => {
-                if (bookmarks) {
-                  if (bookmarks.length > 0) {
-                    var b = [];
-                    bookmarks.forEach((i) => {
-                      b.push({ "text": typeof i.title === "string" ? i.title : 'Unknown', "subtext": i.url });
-                    });
-                    this.$router.showOptionMenu('Bookmarks', b, 'OPEN', (selected) => {
-                      this.$state.setState('target_url', selected.subtext);
-                      setTimeout(() => {
-                        this.$router.push('browser');
-                      }, 100);
-                    }, () => {
-                      setTimeout(() => {
-                        if (!this.$router.bottomSheet) {
-                          if (this.data.projects[this.verticalNavIndex].isArticle) {
-                            this.$router.setSoftKeyRightText('More');
-                          } else {
-                            this.$router.setSoftKeyRightText('');
-                          }
-                        }
-                      }, 100);
-                    }, 0);
-                  }
-                }
-              });
-            } else if (selected.text === 'History') {
-              localforage.getItem('POCKET_HISTORY')
-              .then((history) => {
-                if (history) {
-                  if (history.length > 0) {
-                    var b = [];
-                    history.forEach((i) => {
-                      b.push({ "text": typeof i.title === "string" ? i.title : 'Unknown', "subtext": i.url });
-                    });
-                    this.$router.showOptionMenu('History', b, 'OPEN', (selected) => {
-                      this.$state.setState('target_url', selected.subtext);
-                      setTimeout(() => {
-                        this.$router.push('browser');
-                      }, 100);
-                    }, () => {
-                      setTimeout(() => {
-                        if (!this.$router.bottomSheet) {
-                          if (this.data.projects[this.verticalNavIndex].isArticle) {
-                            this.$router.setSoftKeyRightText('More');
-                          } else {
-                            this.$router.setSoftKeyRightText('');
-                          }
-                        }
-                      }, 100);
-                    }, 0);
-                  }
-                }
-              });
-            } else if (selected.text === 'Clear History') {
-              this.$router.showDialog('Confirm', 'Are you sure to clear history ?', null, 'Yes', () => {
-                localforage.removeItem('POCKET_HISTORY')
-                this.$router.showToast('History Cleared');
-              }, 'No', () => {}, '', () => {}, () => {
-                setTimeout(() => {
-                  if (this.data.projects[this.verticalNavIndex].isArticle) {
-                    this.$router.setSoftKeyRightText('More');
-                  } else {
-                    this.$router.setSoftKeyRightText('');
-                  }
-                }, 100);
-              });
             } else if (selected.text ===  'Help & Support') {
               this.$router.push('helpSupportPage');
-            } else if (selected.text === 'Saved Reader View') {
-              setTimeout(() => {
-                this.$router.push('offlineprojects');
-              }, 110);
             }
           }, () => {
             setTimeout(() => {
@@ -462,6 +529,10 @@ window.addEventListener("load", function() {
       'helpSupportPage': {
         name: 'helpSupportPage',
         component: helpSupportPage
+      },
+      'addProjectPage': {
+        name: 'addProjectPage',
+        component: addProjectPage
       }
     }
   });

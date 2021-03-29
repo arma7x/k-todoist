@@ -12,26 +12,26 @@ const Todoist = (function() {
   }
 
   Todoist.Colors = {
-    30: ['berry_red', '#b8255f'],
-    31: ['red', '#db4035'],
-    32: ['orange', '#ff9933'],
-    33: ['yellow', '#fad000'],
-    34: ['olive_green', '#afb83b'],
-    36: ['green', '#299438'],
-    37: ['mint_green', '#6accbc'],
-    38: ['teal', '#158fad'],
-    39: ['sky_blue', '#14aaf5'],
-    40: ['light_blue', '#96c3eb'],
-    41: ['blue', '#4073ff'],
-    42: ['grape', '#884dff'],
-    43: ['violet', '#af38eb'],
-    44: ['lavender', '#eb96eb'],
-    35: ['lime_green', '#7ecc49'],
-    45: ['magenta', '#e05194'],
-    46: ['salmon', '#ff8d85'],
-    47: ['charcoal', '#808080'],
-    48: ['grey', '#b8b8b8'],
-    49: ['taupe', '#ccac93']
+    30: ['Berry Red', '#b8255f'],
+    31: ['Red', '#db4035'],
+    32: ['Orange', '#ff9933'],
+    33: ['Yellow', '#fad000'],
+    34: ['Olive Green', '#afb83b'],
+    36: ['Green', '#299438'],
+    37: ['Mint Green', '#6accbc'],
+    38: ['Teal', '#158fad'],
+    39: ['Sky Blue', '#14aaf5'],
+    40: ['Light Blue', '#96c3eb'],
+    41: ['Blue', '#4073ff'],
+    42: ['Grape', '#884dff'],
+    43: ['Violet', '#af38eb'],
+    44: ['Lavender', '#eb96eb'],
+    35: ['Lime Green', '#7ecc49'],
+    45: ['Magenta', '#e05194'],
+    46: ['Salmon', '#ff8d85'],
+    47: ['Charcoal', '#808080'],
+    48: ['Grey', '#b8b8b8'],
+    49: ['Taupe', '#ccac93']
   }
 
   Todoist.uuidv4 = function() {

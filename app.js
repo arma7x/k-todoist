@@ -233,12 +233,7 @@ window.addEventListener("load", function() {
       setColor: function() {
         var colors = [];
         for (var i in Todoist.Colors) {
-          const name = Todoist.Colors[i][0];
-          const words = name.split("_");
-          for (let i = 0; i < words.length; i++) {
-            words[i] = words[i][0].toUpperCase() + words[i].substr(1);
-          }
-          colors.push({ "text": words.join(" "), "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
+          colors.push({ "text": Todoist.Colors[i][0], "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
         }
         const idx = colors.findIndex((opt) => {
           return opt.hex === this.data.color_hex;
@@ -313,10 +308,6 @@ window.addEventListener("load", function() {
   });
 
   const updateProjectPage = function($router, id, name, color, favorite) {
-    const cwords = Todoist.Colors[color][0].split("_");
-    for (let i = 0; i < cwords.length; i++) {
-      cwords[i] = cwords[i][0].toUpperCase() + cwords[i].substr(1);
-    }
     $router.push(
       new Kai({
         name: 'editProjectPage',
@@ -324,7 +315,7 @@ window.addEventListener("load", function() {
           title: name,
           favorite: favorite ? 'Yes' : 'No',
           color_hex: Todoist.Colors[color][1],
-          color_name: cwords.join(" "),
+          color_name: Todoist.Colors[color][0],
           color_index: color
         },
         verticalNavClass: '.addTaskNav',
@@ -349,12 +340,7 @@ window.addEventListener("load", function() {
           setColor: function() {
             var colors = [];
             for (var i in Todoist.Colors) {
-              const name = Todoist.Colors[i][0];
-              const words = name.split("_");
-              for (let i = 0; i < words.length; i++) {
-                words[i] = words[i][0].toUpperCase() + words[i].substr(1);
-              }
-              colors.push({ "text": words.join(" "), "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
+              colors.push({ "text": Todoist.Colors[color][0], "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
             }
             const idx = colors.findIndex((opt) => {
               return opt.hex === this.data.color_hex;
@@ -540,7 +526,7 @@ window.addEventListener("load", function() {
     verticalNavClass: '.homepageNav',
     templateUrl: document.location.origin + '/templates/homepage.html',
     mounted: function() {
-      this.$router.setHeaderTitle('K-Todoist');
+      this.$router.setHeaderTitle('Projects');
       this.$state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
       navigator.spatialNavigationEnabled = false;
       localforage.getItem('TODOIST_ACCESS_TOKEN')
@@ -590,7 +576,7 @@ window.addEventListener("load", function() {
           }
         });
         if (projects.length > 0) {
-          this.$router.setSoftKeyText('Menu', 'TASKS', 'More');
+          this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
         } else {
           this.$router.setSoftKeyText('Menu', '', '');
         }
@@ -605,7 +591,7 @@ window.addEventListener("load", function() {
         setTimeout(() => {
           if (!this.$router.bottomSheet) {
             if (this.data.projects.length > 0) {
-              this.$router.setSoftKeyText('Menu', 'TASKS', 'More');
+              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
             } else {
               this.$router.setSoftKeyRightText('Menu', '', '');
             }

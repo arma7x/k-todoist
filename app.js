@@ -248,7 +248,7 @@ window.addEventListener("load", function() {
         }, 'Cancel', null, undefined, idx);
       }
     },
-    softKeyText: { left: 'Cancel', center: 'SELECT', right: 'Add' },
+    softKeyText: { left: 'Back', center: 'SELECT', right: 'Add' },
     softKeyListener: {
       left: function() {
         this.$router.pop();
@@ -312,6 +312,126 @@ window.addEventListener("load", function() {
     }
   });
 
+  const updateProjectPage = function($router, id, name, color, favorite) {
+    const cwords = Todoist.Colors[color][0].split("_");
+    for (let i = 0; i < cwords.length; i++) {
+      cwords[i] = cwords[i][0].toUpperCase() + cwords[i].substr(1);
+    }
+    setTimeout(() => {
+      $router.push(
+        new Kai({
+          name: 'editProjectPage',
+          data: {
+            title: name,
+            favorite: favorite ? 'Yes' : 'No',
+            color_hex: Todoist.Colors[color][1],
+            color_name: cwords.join(" "),
+            color_index: color
+          },
+          verticalNavClass: '.addTaskNav',
+          templateUrl: document.location.origin + '/templates/addProject.html',
+          mounted: function() {
+            this.$router.setHeaderTitle('Edit Project');
+          },
+          unmounted: function() {},
+          methods: {
+            setFavorite: function() {
+              var menu = [
+                { "text": "Yes", "checked": false },
+                { "text": "No", "checked": false }
+              ];
+              const idx = menu.findIndex((opt) => {
+                return opt.text === this.data.favorite;
+              });
+              this.$router.showSingleSelector('Favorite', menu, 'Select', (selected) => {
+                this.setData({ favorite: selected.text });
+              }, 'Cancel', null, undefined, idx);
+            },
+            setColor: function() {
+              var colors = [];
+              for (var i in Todoist.Colors) {
+                const name = Todoist.Colors[i][0];
+                const words = name.split("_");
+                for (let i = 0; i < words.length; i++) {
+                  words[i] = words[i][0].toUpperCase() + words[i].substr(1);
+                }
+                colors.push({ "text": words.join(" "), "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
+              }
+              const idx = colors.findIndex((opt) => {
+                return opt.hex === this.data.color_hex;
+              });
+              this.$router.showSingleSelector('Color', colors, 'Select', (selected) => {
+                this.setData({ color_name: selected.text, color_hex: selected.hex, color_index: parseInt(selected.index) });
+              }, 'Cancel', null, undefined, idx);
+            }
+          },
+          softKeyText: { left: 'Back', center: 'SELECT', right: 'Update' },
+          softKeyListener: {
+            left: function() {
+              this.$router.pop();
+            },
+            center: function() {
+              const listNav = document.querySelectorAll(this.verticalNavClass);
+              if (this.verticalNavIndex > -1) {
+                if (listNav[this.verticalNavIndex]) {
+                  listNav[this.verticalNavIndex].click();
+                }
+              }
+            },
+            right: function() {
+              if (window['TODOIST_API']) {
+                this.$router.showLoading();
+                window['TODOIST_API'].updateProject(id, document.getElementById('project_title').value, this.data.color_index, (this.data.favorite === 'Yes' || false))
+                .then(() => {
+                  this.$router.showToast('Success');
+                })
+                .catch((e) => {
+                  var msg;
+                  if (e.response) {
+                    msg = e.response.toString();
+                  } else {
+                    msg = e.toString();
+                  }
+                  this.$router.showToast(msg);
+                })
+                .finally(() => {
+                  this.$router.hideLoading();
+                });
+              }
+            }
+          },
+          softKeyInputFocusText: { left: 'Done', center: '', right: '' },
+          softKeyInputFocusListener: {
+            left: function() {
+              if (document.activeElement.tagName === 'INPUT') {
+                document.activeElement.blur();
+                this.dPadNavListener.arrowDown();
+              }
+            },
+            center: function() {},
+            right: function() {}
+          },
+          dPadNavListener: {
+            arrowUp: function() {
+              this.navigateListNav(-1);
+              this.data.title = document.getElementById('project_title').value;
+            },
+            arrowRight: function() {
+              // this.navigateTabNav(-1);
+            },
+            arrowDown: function() {
+              this.navigateListNav(1);
+              this.data.title = document.getElementById('project_title').value;
+            },
+            arrowLeft: function() {
+              // this.navigateTabNav(1);
+            },
+          }
+        })
+      );
+    }, 101);
+  }
+
   const homepage = new Kai({
     name: 'homepage',
     data: {
@@ -372,15 +492,34 @@ window.addEventListener("load", function() {
             projects.push(i);
           }
         });
+        if (projects.length > 0) {
+          this.$router.setSoftKeyText('Menu', 'SELECT', 'More');
+        } else {
+          this.$router.setSoftKeyText('Menu', '', '');
+        }
+        if ((projects.length - 1) < this.verticalNavIndex) {
+          this.verticalNavIndex--;
+        }
         projects.sort((a,b) => (a.child_order > b.child_order) ? 1 : ((b.child_order > a.child_order) ? -1 : 0));
         this.setData({ projects: projects, empty: (projects.length === 0 ? true : false) });
         console.log(projects);
+      },
+      toggleSoftKeyText: function() {
+        setTimeout(() => {
+          if (!this.$router.bottomSheet) {
+            if (this.data.projects.length > 0) {
+              this.$router.setSoftKeyText('Menu', 'SELECT', 'More');
+            } else {
+              this.$router.setSoftKeyRightText('Menu', '', '');
+            }
+          }
+        }, 100);
       },
       deleteArticle: function() {},
       nextPage: function() {},
       selected: function() {}
     },
-    softKeyText: { left: 'Menu', center: '', right: '' },
+    softKeyText: { left: '', center: '', right: '' },
     softKeyListener: {
       left: function() {
         localforage.getItem('TODOIST_ACCESS_TOKEN')
@@ -391,7 +530,6 @@ window.addEventListener("load", function() {
             { "text": "Login" }
           ];
           if (res) {
-            title = res.username;
             menu = [
               { "text": "Help & Support" },
               { "text": "Sync" },
@@ -418,15 +556,7 @@ window.addEventListener("load", function() {
               this.$router.push('helpSupportPage');
             }
           }, () => {
-            setTimeout(() => {
-              if (!this.$router.bottomSheet && this.$router.stack[this.$router.stack.length - 1].name === 'homepage') {
-                if (this.data.projects[this.verticalNavIndex].isArticle) {
-                  this.$router.setSoftKeyRightText('More');
-                } else {
-                  this.$router.setSoftKeyRightText('');
-                }
-              }
-            }, 100);
+            this.methods.toggleSoftKeyText();
           }, 0);
         })
         .catch((err) => {
@@ -440,68 +570,50 @@ window.addEventListener("load", function() {
         }
       },
       right: function() {
-        var title = 'Menu';
+        var title = 'Options';
         var menu = [
-          { "text": "Open with built-in browser" },
-          { "text": "Open with KaiOS Browser" },
-          { "text": "Open with Reader View" },
-          { "text": "Save Reader View" },
-          { "text": "Delete" }
+          { "text": "Edit Project" },
+          { "text": "Completed Tasks" },
+          { "text": "Comments" },
+          { "text": "Delete Project" }
         ];
-        var current = this.data.projects[this.verticalNavIndex];
-        var hashids = new Hashids(current.given_url, 10);
-        var id = hashids.encode(1);
-        localforage.getItem('CONTENT___' + id)
-        .then((article) => {
-          if (article != null) {
-            menu[3] = { "text": "Delete Reader View" }
-          }
-          this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
-            if (selected.text === 'Open with built-in browser') {
-              this.$state.setState('target_url', current.given_url);
-              this.$router.push('browser');
-            } else if (selected.text === 'Open with KaiOS Browser') {
-              var activity = new MozActivity({
-                name: "view",
-                data: {
-                  type: "url",
-                  url: current.given_url
-                }
-              });
-            } else if (selected.text === 'Delete') {
-              this.methods.deleteArticle();
-            } else if (selected.text === 'Open with Reader View') {
-              readabilityPage(this.$router, current.given_url, current.title, false);
-            } else if (selected.text === 'Save Reader View') {
-              readabilityPage(this.$router, current.given_url, '', true);
-            } else if (selected.text === 'Delete Reader View') {
-              localforage.getItem('projects')
-              .then((projects) => {
-                var filtered = [];
-                if (projects != null) {
-                  filtered = projects.filter(function(a) {
-                    return a.hashid != id;
-                  });
-                  localforage.setItem('projects', filtered)
-                  .then(() => {
-                    localforage.removeItem('CONTENT___' + id)
-                    this.$router.showToast('Success');
-                  });
-                }
-              })
+        this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
+          var proj = this.data.projects[this.verticalNavIndex];
+          if (selected.text === 'Edit Project') {
+            if (proj) {
+              updateProjectPage(this.$router, proj.id, proj.name, proj.color, proj.is_favorite);
             }
-          }, () => {
-            setTimeout(() => {
-              if (!this.$router.bottomSheet) {
-                if (this.data.projects[this.verticalNavIndex].isArticle) {
-                  this.$router.setSoftKeyRightText('More');
-                } else {
-                  this.$router.setSoftKeyRightText('');
-                }
-              }
-            }, 100);
-          }, 0);
-        });
+          } else if (selected.text === 'Completed Taks') {
+            if (proj) {
+            }
+          } else if (selected.text === 'Delete Project') {
+            if (proj) {
+              this.$router.showDialog('Confirm', 'Are you sure to delete ' + proj.name + ' ?', null, 'Yes', () => {
+                this.$router.showLoading();
+                window['TODOIST_API'].deleteProject(proj.id)
+                .then(() => {
+                  this.$router.showToast('Success');
+                })
+                .catch((e) => {
+                  var msg;
+                  if (e.response) {
+                    msg = e.response.toString();
+                  } else {
+                    msg = e.toString();
+                  }
+                  this.$router.showToast(msg);
+                })
+                .finally(() => {
+                  this.$router.hideLoading();
+                });
+              }, 'No', () => {}, '', () => {}, () => {
+                this.methods.toggleSoftKeyText();
+              });
+            }
+          }
+        }, () => {
+          this.methods.toggleSoftKeyText();
+        }, 0);
       }
     },
     backKeyListener: function() {
@@ -509,27 +621,17 @@ window.addEventListener("load", function() {
     },
     dPadNavListener: {
       arrowUp: function() {
-        if (this.verticalNavIndex === 0) {
+        if (this.verticalNavIndex === 0 || this.data.projects.length === 0) {
           return;
         }
         this.navigateListNav(-1);
-        if (this.data.projects[this.verticalNavIndex].isArticle) {
-          this.$router.setSoftKeyRightText('More');
-        } else {
-          this.$router.setSoftKeyRightText('');
-        }
       },
       arrowRight: function() {},
       arrowDown: function() {
-        if (this.verticalNavIndex === (this.data.projects.length - 1)) {
+        if (this.verticalNavIndex === (this.data.projects.length - 1)  || this.data.projects.length === 0) {
           return;
         }
         this.navigateListNav(1);
-        if (this.data.projects[this.verticalNavIndex].isArticle) {
-          this.$router.setSoftKeyRightText('More');
-        } else {
-          this.$router.setSoftKeyRightText('');
-        }
       },
       arrowLeft: function() {},
     }

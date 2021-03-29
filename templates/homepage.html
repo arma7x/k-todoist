@@ -25,10 +25,10 @@
     {{^empty}}
       <ul class="kui-list kai-container">
         {{#projects}}
-        <li class="homepageNav" style="padding-left:5px;padding:right:5px;border-left:5px solid {{ color_hex }};border-bottom:1px dashed #320374;"  @click='selected()'>
-          <div style="width:100%;height:92%;display:flex;flex-direction:column;justify-content:space-between;">
-            <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{ name }}</h5>
-            <small style="float:right;text-align:right;">#{{ id }}</small>
+        <li class="homepageNav" style="border-bottom:1px dashed #320374;"  @click='selected()'>
+          <div class="kui-row-center">
+            <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{#is_favorite}}&#11088;{{/is_favorite}} {{ name }}</h5>
+            <small style="float:right;text-align:right;background-color:{{ color_hex }};width:10px;height:10px;border-radius:50%;"></small>
           </div>
         </li>
         {{/projects}}

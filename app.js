@@ -317,119 +317,214 @@ window.addEventListener("load", function() {
     for (let i = 0; i < cwords.length; i++) {
       cwords[i] = cwords[i][0].toUpperCase() + cwords[i].substr(1);
     }
-    setTimeout(() => {
-      $router.push(
-        new Kai({
-          name: 'editProjectPage',
-          data: {
-            title: name,
-            favorite: favorite ? 'Yes' : 'No',
-            color_hex: Todoist.Colors[color][1],
-            color_name: cwords.join(" "),
-            color_index: color
+    $router.push(
+      new Kai({
+        name: 'editProjectPage',
+        data: {
+          title: name,
+          favorite: favorite ? 'Yes' : 'No',
+          color_hex: Todoist.Colors[color][1],
+          color_name: cwords.join(" "),
+          color_index: color
+        },
+        verticalNavClass: '.addTaskNav',
+        templateUrl: document.location.origin + '/templates/addProject.html',
+        mounted: function() {
+          this.$router.setHeaderTitle('Edit Project');
+        },
+        unmounted: function() {},
+        methods: {
+          setFavorite: function() {
+            var menu = [
+              { "text": "Yes", "checked": false },
+              { "text": "No", "checked": false }
+            ];
+            const idx = menu.findIndex((opt) => {
+              return opt.text === this.data.favorite;
+            });
+            this.$router.showSingleSelector('Favorite', menu, 'Select', (selected) => {
+              this.setData({ favorite: selected.text });
+            }, 'Cancel', null, undefined, idx);
           },
-          verticalNavClass: '.addTaskNav',
-          templateUrl: document.location.origin + '/templates/addProject.html',
-          mounted: function() {
-            this.$router.setHeaderTitle('Edit Project');
-          },
-          unmounted: function() {},
-          methods: {
-            setFavorite: function() {
-              var menu = [
-                { "text": "Yes", "checked": false },
-                { "text": "No", "checked": false }
-              ];
-              const idx = menu.findIndex((opt) => {
-                return opt.text === this.data.favorite;
-              });
-              this.$router.showSingleSelector('Favorite', menu, 'Select', (selected) => {
-                this.setData({ favorite: selected.text });
-              }, 'Cancel', null, undefined, idx);
-            },
-            setColor: function() {
-              var colors = [];
-              for (var i in Todoist.Colors) {
-                const name = Todoist.Colors[i][0];
-                const words = name.split("_");
-                for (let i = 0; i < words.length; i++) {
-                  words[i] = words[i][0].toUpperCase() + words[i].substr(1);
-                }
-                colors.push({ "text": words.join(" "), "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
+          setColor: function() {
+            var colors = [];
+            for (var i in Todoist.Colors) {
+              const name = Todoist.Colors[i][0];
+              const words = name.split("_");
+              for (let i = 0; i < words.length; i++) {
+                words[i] = words[i][0].toUpperCase() + words[i].substr(1);
               }
-              const idx = colors.findIndex((opt) => {
-                return opt.hex === this.data.color_hex;
-              });
-              this.$router.showSingleSelector('Color', colors, 'Select', (selected) => {
-                this.setData({ color_name: selected.text, color_hex: selected.hex, color_index: parseInt(selected.index) });
-              }, 'Cancel', null, undefined, idx);
+              colors.push({ "text": words.join(" "), "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
             }
-          },
-          softKeyText: { left: 'Back', center: 'SELECT', right: 'Update' },
-          softKeyListener: {
-            left: function() {
-              this.$router.pop();
-            },
-            center: function() {
-              const listNav = document.querySelectorAll(this.verticalNavClass);
-              if (this.verticalNavIndex > -1) {
-                if (listNav[this.verticalNavIndex]) {
-                  listNav[this.verticalNavIndex].click();
-                }
-              }
-            },
-            right: function() {
-              if (window['TODOIST_API']) {
-                this.$router.showLoading();
-                window['TODOIST_API'].updateProject(id, document.getElementById('project_title').value, this.data.color_index, (this.data.favorite === 'Yes' || false))
-                .then(() => {
-                  this.$router.showToast('Success');
-                })
-                .catch((e) => {
-                  var msg;
-                  if (e.response) {
-                    msg = e.response.toString();
-                  } else {
-                    msg = e.toString();
-                  }
-                  this.$router.showToast(msg);
-                })
-                .finally(() => {
-                  this.$router.hideLoading();
-                });
-              }
-            }
-          },
-          softKeyInputFocusText: { left: 'Done', center: '', right: '' },
-          softKeyInputFocusListener: {
-            left: function() {
-              if (document.activeElement.tagName === 'INPUT') {
-                document.activeElement.blur();
-                this.dPadNavListener.arrowDown();
-              }
-            },
-            center: function() {},
-            right: function() {}
-          },
-          dPadNavListener: {
-            arrowUp: function() {
-              this.navigateListNav(-1);
-              this.data.title = document.getElementById('project_title').value;
-            },
-            arrowRight: function() {
-              // this.navigateTabNav(-1);
-            },
-            arrowDown: function() {
-              this.navigateListNav(1);
-              this.data.title = document.getElementById('project_title').value;
-            },
-            arrowLeft: function() {
-              // this.navigateTabNav(1);
-            },
+            const idx = colors.findIndex((opt) => {
+              return opt.hex === this.data.color_hex;
+            });
+            this.$router.showSingleSelector('Color', colors, 'Select', (selected) => {
+              this.setData({ color_name: selected.text, color_hex: selected.hex, color_index: parseInt(selected.index) });
+            }, 'Cancel', null, undefined, idx);
           }
-        })
-      );
-    }, 101);
+        },
+        softKeyText: { left: 'Back', center: 'SELECT', right: 'Update' },
+        softKeyListener: {
+          left: function() {
+            this.$router.pop();
+          },
+          center: function() {
+            const listNav = document.querySelectorAll(this.verticalNavClass);
+            if (this.verticalNavIndex > -1) {
+              if (listNav[this.verticalNavIndex]) {
+                listNav[this.verticalNavIndex].click();
+              }
+            }
+          },
+          right: function() {
+            if (window['TODOIST_API']) {
+              this.$router.showLoading();
+              window['TODOIST_API'].updateProject(id, document.getElementById('project_title').value, this.data.color_index, (this.data.favorite === 'Yes' || false))
+              .then(() => {
+                this.$router.showToast('Success');
+              })
+              .catch((e) => {
+                var msg;
+                if (e.response) {
+                  msg = e.response.toString();
+                } else {
+                  msg = e.toString();
+                }
+                this.$router.showToast(msg);
+              })
+              .finally(() => {
+                this.$router.hideLoading();
+              });
+            }
+          }
+        },
+        softKeyInputFocusText: { left: 'Done', center: '', right: '' },
+        softKeyInputFocusListener: {
+          left: function() {
+            if (document.activeElement.tagName === 'INPUT') {
+              document.activeElement.blur();
+              this.dPadNavListener.arrowDown();
+            }
+          },
+          center: function() {},
+          right: function() {}
+        },
+        dPadNavListener: {
+          arrowUp: function() {
+            this.navigateListNav(-1);
+            this.data.title = document.getElementById('project_title').value;
+          },
+          arrowRight: function() {
+            // this.navigateTabNav(-1);
+          },
+          arrowDown: function() {
+            this.navigateListNav(1);
+            this.data.title = document.getElementById('project_title').value;
+          },
+          arrowLeft: function() {
+            // this.navigateTabNav(1);
+          },
+        }
+      })
+    );
+  }
+
+  const completedTasksPage = function($router, project_id) {
+    if (window['TODOIST_API']) {
+      $router.showLoading();
+      window['TODOIST_API'].getCompletedTasks(project_id)
+      .then((d) => {
+        console.log(d.response.items);
+      })
+      .catch((e) => {
+        var msg;
+        if (e.response) {
+          msg = e.response.toString();
+        } else {
+          msg = e.toString();
+        }
+        $router.showToast(msg);
+      })
+      .finally(() => {
+        $router.hideLoading();
+      });
+    }
+  }
+
+  const tasksPage = function($router, project_id, parent_id, section_id) {
+
+    function extract(items) {
+      var _tasks = [];
+      items.forEach((i) => {
+        if (i.project_id === project_id && i.section_id === section_id && i.parent_id === parent_id && i.is_deleted == 0) {
+          const idx = items.findIndex((j) => {
+            return j.parent_id === i.id;
+          });
+          i.has_subtask = false;
+          if (idx > -1) {
+            i.has_subtask = true;
+          }
+          _tasks.push(i);
+        }
+      });
+      _tasks.sort((a,b) => (a.child_order > b.child_order) ? 1 : ((b.child_order > a.child_order) ? -1 : 0));
+      return _tasks;
+    }
+
+    var tasks = extract(state.getState('TODOIST_SYNC')['items']);
+    console.log(tasks);
+    const idx = state.getState('TODOIST_SYNC')['projects'].findIndex((j) => {
+      return j.id === project_id;
+    });
+    var name = `Project #${project_id}`;
+    if (idx > -1) {
+      name = state.getState('TODOIST_SYNC')['projects'][idx].name;
+    }
+    $router.push(
+      new Kai({
+        name: 'tasksPage',
+        data: {
+          title: 'tasksPage',
+          tasks: tasks
+        },
+        template: '<div style="padding:4px;"><style>.kui-software-key{height:0px}</style><b>NOTICE</b><br>Save button within the https://getpocket.com/explore is not working. Please use `Save to GetPocket` to save website you visited to your GetPocket account<br><br><b>Reader View</b><br>Parses html text (usually news and other articles) and returns title, author, main image and text content without nav bars, ads, footers, or anything that isn\'t the main body of the text. Analyzes each node, gives them a score, and determines what\'s relevant and what can be discarded<br><br> <b>Shortcut Key</b><br>* 1 Zoom-out<br> * 2 Reset zoom<br> * 3 Zoom-in<br> * 5 Hide/Show menu</div>',
+        mounted: function() {
+          this.$router.setHeaderTitle(name);
+          state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+        },
+        unmounted: function() {
+          state.removeStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+        },
+        methods: {
+          listenStateSync: function(data) {
+            var _tasks = extract(data['items']);
+            this.setData({tasks: _tasks});
+            console.log(this.data.tasks);
+          }
+        },
+        softKeyText: { left: '', center: '', right: '' },
+        softKeyListener: {
+          left: function() {},
+          center: function() {},
+          right: function() {}
+        }
+      })
+    );
+  }
+
+  const sectionsPage = function($router, project_id) {
+    var sections = [];
+    state.getState('TODOIST_SYNC')['sections'].forEach((i) => {
+      if (i.project_id === project_id && i.is_deleted == 0) {
+        sections.push(i);
+      }
+    });
+    sections.sort((a,b) => (a.section_order > b.section_order) ? 1 : ((b.section_order > a.section_order) ? -1 : 0));
+    console.log(sections);
+    //sections.forEach((i) => {
+    //  tasksPage($router, i.project_id, null, i.id);
+    //});
   }
 
   const homepage = new Kai({
@@ -461,6 +556,8 @@ window.addEventListener("load", function() {
               this.methods.listenStateSync(TODOIST_SYNC);
             })
           }
+        } else {
+          this.$router.setSoftKeyLeftText('Menu', '', '');
         }
       });
     },
@@ -470,14 +567,14 @@ window.addEventListener("load", function() {
     methods: {
       sync: function() {
         if (window['TODOIST_API']) {
-          this.$router.showToast('Sync');
+          //this.$router.showToast('Sync');
           this.$router.showLoading();
           window['TODOIST_API'].sync()
           .then((res) => {
-            this.$router.showToast('Done Sync');
+            //this.$router.showToast('Done Sync');
           })
           .catch(() => {
-            this.$router.showToast('Error Sync');
+            //this.$router.showToast('Error Sync');
           })
           .finally(() => {
             this.$router.hideLoading();
@@ -487,13 +584,13 @@ window.addEventListener("load", function() {
       listenStateSync: function(data) {
         var projects = [];
         data.projects.forEach((i) => {
-          if (i.is_deleted === 0) {
+          if (i.is_deleted == 0) {
             i.color_hex = Todoist.Colors[i.color][1];
             projects.push(i);
           }
         });
         if (projects.length > 0) {
-          this.$router.setSoftKeyText('Menu', 'SELECT', 'More');
+          this.$router.setSoftKeyText('Menu', 'TASKS', 'More');
         } else {
           this.$router.setSoftKeyText('Menu', '', '');
         }
@@ -508,7 +605,7 @@ window.addEventListener("load", function() {
         setTimeout(() => {
           if (!this.$router.bottomSheet) {
             if (this.data.projects.length > 0) {
-              this.$router.setSoftKeyText('Menu', 'SELECT', 'More');
+              this.$router.setSoftKeyText('Menu', 'TASKS', 'More');
             } else {
               this.$router.setSoftKeyRightText('Menu', '', '');
             }
@@ -517,7 +614,12 @@ window.addEventListener("load", function() {
       },
       deleteArticle: function() {},
       nextPage: function() {},
-      selected: function() {}
+      selected: function() {
+        var proj = this.data.projects[this.verticalNavIndex];
+        if (proj) {
+          tasksPage(this.$router, proj.id, null, null);
+        }
+      }
     },
     softKeyText: { left: '', center: '', right: '' },
     softKeyListener: {
@@ -547,9 +649,9 @@ window.addEventListener("load", function() {
               localforage.removeItem('TODOIST_ACCESS_TOKEN');
               localforage.removeItem('TODOIST_SYNC');
               this.verticalNavIndex = 0;
-              this.$router.setSoftKeyRightText('');
               this.setData({ TODOIST_ACCESS_TOKEN: null });
               this.setData({ projects: [], offset: -1 });
+              this.$router.setSoftKeyRightText('Menu', '', '');
             } else if (selected.text === 'Sync') {
               this.methods.sync();
             } else if (selected.text ===  'Help & Support') {
@@ -572,44 +674,49 @@ window.addEventListener("load", function() {
       right: function() {
         var title = 'Options';
         var menu = [
+          { "text": "Show Tasks" },
+          { "text": "Show Sections" },
           { "text": "Edit Project" },
-          { "text": "Completed Tasks" },
           { "text": "Comments" },
+          { "text": "Show Completed Tasks" },
           { "text": "Delete Project" }
         ];
         this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
           var proj = this.data.projects[this.verticalNavIndex];
-          if (selected.text === 'Edit Project') {
-            if (proj) {
-              updateProjectPage(this.$router, proj.id, proj.name, proj.color, proj.is_favorite);
-            }
-          } else if (selected.text === 'Completed Taks') {
-            if (proj) {
-            }
-          } else if (selected.text === 'Delete Project') {
-            if (proj) {
-              this.$router.showDialog('Confirm', 'Are you sure to delete ' + proj.name + ' ?', null, 'Yes', () => {
-                this.$router.showLoading();
-                window['TODOIST_API'].deleteProject(proj.id)
-                .then(() => {
-                  this.$router.showToast('Success');
-                })
-                .catch((e) => {
-                  var msg;
-                  if (e.response) {
-                    msg = e.response.toString();
-                  } else {
-                    msg = e.toString();
-                  }
-                  this.$router.showToast(msg);
-                })
-                .finally(() => {
-                  this.$router.hideLoading();
+          if (proj) {
+            setTimeout(() => {
+              if (selected.text === 'Show Tasks') {
+                tasksPage(this.$router, proj.id, null, null);
+              } else if (selected.text === 'Show Sections') {
+                sectionsPage(this.$router, proj.id);
+              } else if (selected.text === 'Edit Project') {
+                updateProjectPage(this.$router, proj.id, proj.name, proj.color, proj.is_favorite);
+              } else if (selected.text === 'Show Completed Tasks') {
+                completedTasksPage(this.$router, proj.id);
+              } else if (selected.text === 'Delete Project') {
+                this.$router.showDialog('Confirm', 'Are you sure to delete ' + proj.name + ' ?', null, 'Yes', () => {
+                  this.$router.showLoading();
+                  window['TODOIST_API'].deleteProject(proj.id)
+                  .then(() => {
+                    this.$router.showToast('Success');
+                  })
+                  .catch((e) => {
+                    var msg;
+                    if (e.response) {
+                      msg = e.response.toString();
+                    } else {
+                      msg = e.toString();
+                    }
+                    this.$router.showToast(msg);
+                  })
+                  .finally(() => {
+                    this.$router.hideLoading();
+                  });
+                }, 'No', () => {}, '', () => {}, () => {
+                  this.methods.toggleSoftKeyText();
                 });
-              }, 'No', () => {}, '', () => {}, () => {
-                this.methods.toggleSoftKeyText();
-              });
-            }
+              }
+            }, 101);
           }
         }, () => {
           this.methods.toggleSoftKeyText();
@@ -681,7 +788,7 @@ window.addEventListener("load", function() {
     slot: 'kaios',
     onerror: err => console.error(err),
     onready: ad => {
-      ad.call('display')
+      //ad.call('display')
     }
   })
 

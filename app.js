@@ -90,6 +90,7 @@ window.addEventListener("load", function() {
           return j.parent_id === i.id;
         });
         i.has_subtask = false;
+        i.parsed_content = snarkdown(i.content);
         if (idx > -1) {
           i.has_subtask = true;
         }
@@ -469,7 +470,6 @@ window.addEventListener("load", function() {
 
   const tasksPage = function($router, project_id, parent_id, section_id) {
 
-    var tasks = extractItems(state.getState('TODOIST_SYNC')['items'], project_id, parent_id, section_id);
     var name = `Project #${project_id}`;
     if (section_id) {
       const idx = state.getState('TODOIST_SYNC')['sections'].find((j) => {
@@ -499,7 +499,7 @@ window.addEventListener("load", function() {
         name: 'tasksPage',
         data: {
           title: 'tasksPage',
-          tasks: tasks,
+          tasks: [],
           empty: true
         },
         templateUrl: document.location.origin + '/templates/tasks.html',
@@ -507,15 +507,12 @@ window.addEventListener("load", function() {
         mounted: function() {
           this.$router.setHeaderTitle(name);
           state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
-            if (tasks.length > 0) {
-              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
-            } else {
-              this.$router.setSoftKeyText('Menu', '', '');
-            }
-            if ((tasks.length - 1) < this.verticalNavIndex) {
-              this.verticalNavIndex--;
-            }
-            this.setData({empty: !(tasks.length > 0)});
+          var tasks = extractItems(state.getState('TODOIST_SYNC')['items'], project_id, parent_id, section_id);
+          if ((tasks.length - 1) < this.verticalNavIndex) {
+            this.verticalNavIndex--;
+          }
+          this.setData({tasks: tasks, empty: !(tasks.length > 0)});
+          this.methods.toggleSoftKeyText(this.verticalNavIndex);
         },
         unmounted: function() {
           state.removeStateListener('TODOIST_SYNC', this.methods.listenStateSync);
@@ -523,15 +520,11 @@ window.addEventListener("load", function() {
         methods: {
           listenStateSync: function(data) {
             var _tasks = extractItems(data['items'], project_id, parent_id, section_id);
-            if (_tasks.length > 0) {
-              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
-            } else {
-              this.$router.setSoftKeyText('Menu', '', '');
-            }
             if ((_tasks.length - 1) < this.verticalNavIndex) {
               this.verticalNavIndex--;
             }
             this.setData({tasks: _tasks, empty: !(_tasks.length > 0)});
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
             console.log(this.data.tasks);
           },
           selected: function() {
@@ -540,6 +533,17 @@ window.addEventListener("load", function() {
               if (task.has_subtask) {
                 tasksPage($router, task.project_id, task.id, null);
               }
+            }
+          },
+          toggleSoftKeyText: function(idx) {
+            if (this.data.tasks[idx]) {
+              if (this.data.tasks[idx].has_subtask) {
+                this.$router.setSoftKeyText('Add', 'OPEN', 'More');
+              } else {
+                this.$router.setSoftKeyText('Add', '', 'More');
+              }
+            } else {
+              this.$router.setSoftKeyText('Add', '', '');
             }
           }
         },
@@ -560,6 +564,7 @@ window.addEventListener("load", function() {
               return;
             }
             this.navigateListNav(-1);
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
           },
           arrowRight: function() {},
           arrowDown: function() {
@@ -567,6 +572,7 @@ window.addEventListener("load", function() {
               return;
             }
             this.navigateListNav(1);
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
           }
         }
       })
@@ -575,7 +581,6 @@ window.addEventListener("load", function() {
 
   const sectionsPage = function($router, project_id) {
 
-    var sections = extractSections(state.getState('TODOIST_SYNC')['sections'], project_id);
     const idx = state.getState('TODOIST_SYNC')['projects'].find((j) => {
       return j.id === project_id;
     });
@@ -589,7 +594,7 @@ window.addEventListener("load", function() {
         name: 'sectionsPagee',
         data: {
           title: 'sectionsPage',
-          sections: sections,
+          sections: [],
           empty: true
         },
         templateUrl: document.location.origin + '/templates/sections.html',
@@ -597,15 +602,12 @@ window.addEventListener("load", function() {
         mounted: function() {
           this.$router.setHeaderTitle(name);
           state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
-            if (sections.length > 0) {
-              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
-            } else {
-              this.$router.setSoftKeyText('Menu', '', '');
-            }
-            if ((sections.length - 1) < this.verticalNavIndex) {
-              this.verticalNavIndex--;
-            }
-            this.setData({empty: !(sections.length > 0)});
+          var sections = extractSections(state.getState('TODOIST_SYNC')['sections'], project_id);
+          if ((sections.length - 1) < this.verticalNavIndex) {
+            this.verticalNavIndex--;
+          }
+          this.setData({sections: sections, empty: !(sections.length > 0)});
+          this.methods.toggleSoftKeyText(this.verticalNavIndex);
         },
         unmounted: function() {
           state.removeStateListener('TODOIST_SYNC', this.methods.listenStateSync);
@@ -613,15 +615,11 @@ window.addEventListener("load", function() {
         methods: {
           listenStateSync: function(data) {
             var _sections = extractItems(data['sections'], project_id, parent_id, section_id);
-            if (_sections.length > 0) {
-              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
-            } else {
-              this.$router.setSoftKeyText('Menu', '', '');
-            }
             if ((_sections.length - 1) < this.verticalNavIndex) {
               this.verticalNavIndex--;
             }
             this.setData({sections: _sections, empty: !(_sections.length > 0)});
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
             console.log(this.data.sections);
           },
           selected: function() {
@@ -629,11 +627,20 @@ window.addEventListener("load", function() {
             if (section) {
               tasksPage($router, section.project_id, null, section.id);
             }
+          },
+          toggleSoftKeyText: function(idx) {
+            if (this.data.sections[idx]) {
+              this.$router.setSoftKeyText('Add', 'OPEN', 'More');
+            } else {
+              this.$router.setSoftKeyText('Add', '', '');
+            }
           }
         },
         softKeyText: { left: '', center: '', right: '' },
         softKeyListener: {
-          left: function() {},
+          left: function() {
+            addSectionPage($router, project_id);
+          },
           center: function() {
             if (this.verticalNavIndex > -1) {
               const nav = document.querySelectorAll(this.verticalNavClass);
@@ -648,6 +655,7 @@ window.addEventListener("load", function() {
               return;
             }
             this.navigateListNav(-1);
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
           },
           arrowRight: function() {},
           arrowDown: function() {
@@ -655,7 +663,85 @@ window.addEventListener("load", function() {
               return;
             }
             this.navigateListNav(1);
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
           }
+        }
+      })
+    );
+  }
+
+  const addSectionPage = function($router, project_id) {
+    $router.push(
+      new Kai({
+        name: 'addSectionPage',
+        data: {
+          title: ''
+        },
+        verticalNavClass: '.addSectionNav',
+        templateUrl: document.location.origin + '/templates/addSection.html',
+        mounted: function() {
+          this.$router.setHeaderTitle('Add Section');
+        },
+        unmounted: function() {},
+        methods: {},
+        softKeyText: { left: 'Back', center: 'SELECT', right: 'Add' },
+        softKeyListener: {
+          left: function() {
+            this.$router.pop();
+          },
+          center: function() {},
+          right: function() {
+            
+          }
+        },
+        softKeyInputFocusText: { left: 'Back', center: '', right: 'Add' },
+        softKeyInputFocusListener: {
+          left: function() {
+            if (document.activeElement.tagName === 'INPUT') {
+              document.activeElement.blur();
+              this.$router.pop();
+            }
+          },
+          center: function() {},
+          right: function() {
+            if (document.activeElement.tagName === 'INPUT') {
+              if (window['TODOIST_API']) {
+                this.$router.showLoading();
+                window['TODOIST_API'].createSection(project_id, document.getElementById('section_title').value)
+                .then(() => {
+                  this.$router.showToast('Success');
+                })
+                .catch((e) => {
+                  var msg;
+                  if (e.response) {
+                    msg = e.response.toString();
+                  } else {
+                    msg = e.toString();
+                  }
+                  this.$router.showToast(msg);
+                })
+                .finally(() => {
+                  this.$router.hideLoading();
+                });
+              }
+            }
+          }
+        },
+        dPadNavListener: {
+          arrowUp: function() {
+            this.navigateListNav(-1);
+            this.data.title = document.getElementById('project_title').value;
+          },
+          arrowRight: function() {
+            // this.navigateTabNav(-1);
+          },
+          arrowDown: function() {
+            this.navigateListNav(1);
+            this.data.title = document.getElementById('project_title').value;
+          },
+          arrowLeft: function() {
+            // this.navigateTabNav(1);
+          },
         }
       })
     );

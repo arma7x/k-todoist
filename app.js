@@ -614,7 +614,8 @@ window.addEventListener("load", function() {
         },
         methods: {
           listenStateSync: function(data) {
-            var _sections = extractItems(data['sections'], project_id, parent_id, section_id);
+            console.log('listenStateSync sections');
+            var _sections = extractSections(data['sections'], project_id);
             if ((_sections.length - 1) < this.verticalNavIndex) {
               this.verticalNavIndex--;
             }

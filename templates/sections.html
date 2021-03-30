@@ -1,0 +1,35 @@
+<div class="kui-flex-wrap">
+  <style>
+  @media only screen and (orientation : portrait) {
+    .img-holder-hp {
+      margin-left: -30px;
+      height: 160px;
+      width: 160px;
+    }
+  }
+  @media screen and (orientation: landscape) {
+    .img-holder-hp {
+      margin-left: -30px;
+      height: 80px;
+      width: 80px;
+    }
+  }
+  </style>
+  {{#empty}}
+    <div style="text-align:center;white-space:pre-wrap!important;word-break:break-word!important;font-weight:bold;">
+      <img class="img-holder-hp" src="/img/empty.png"/>
+      <div>No Sections</div>
+    </div>
+  {{/empty}}
+  {{^empty}}
+    <ul class="kui-list kai-container">
+      {{#sections}}
+      <li class="sectionListNav" style="border-bottom:1px dashed #320374;"  @click='selected()'>
+        <div class="kui-row-center">
+          <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{ name }}</h5>
+        </div>
+      </li>
+      {{/sections}}
+    </ul>
+  {{/empty}}
+</div>

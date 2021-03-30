@@ -82,6 +82,35 @@ window.addEventListener("load", function() {
     }
   }
 
+  function extractItems(items, project_id, parent_id, section_id) {
+    var _tasks = [];
+    items.forEach((i) => {
+      if (i.project_id === project_id && i.parent_id === parent_id && i.section_id === section_id && i.is_deleted == 0) {
+        const idx = items.findIndex((j) => {
+          return j.parent_id === i.id;
+        });
+        i.has_subtask = false;
+        if (idx > -1) {
+          i.has_subtask = true;
+        }
+        _tasks.push(i);
+      }
+    });
+    _tasks.sort((a,b) => (a.child_order > b.child_order) ? 1 : ((b.child_order > a.child_order) ? -1 : 0));
+    return _tasks;
+  }
+
+  function extractSections(sections, project_id) {
+    var _sections = [];
+    sections.forEach((i) => {
+      if (i.project_id === project_id && i.is_deleted == 0) {
+        _sections.push(i);
+      }
+    });
+    _sections.sort((a,b) => (a.section_order > b.section_order) ? 1 : ((b.section_order > a.section_order) ? -1 : 0));
+    return _sections;
+  }
+
   const helpSupportPage = new Kai({
     name: 'helpSupportPage',
     data: {
@@ -440,77 +469,196 @@ window.addEventListener("load", function() {
 
   const tasksPage = function($router, project_id, parent_id, section_id) {
 
-    function extract(items) {
-      var _tasks = [];
-      items.forEach((i) => {
-        if (i.project_id === project_id && i.section_id === section_id && i.parent_id === parent_id && i.is_deleted == 0) {
-          const idx = items.findIndex((j) => {
-            return j.parent_id === i.id;
-          });
-          i.has_subtask = false;
-          if (idx > -1) {
-            i.has_subtask = true;
-          }
-          _tasks.push(i);
-        }
+    var tasks = extractItems(state.getState('TODOIST_SYNC')['items'], project_id, parent_id, section_id);
+    var name = `Project #${project_id}`;
+    if (section_id) {
+      const idx = state.getState('TODOIST_SYNC')['sections'].find((j) => {
+      return j.id === section_id;
       });
-      _tasks.sort((a,b) => (a.child_order > b.child_order) ? 1 : ((b.child_order > a.child_order) ? -1 : 0));
-      return _tasks;
+      if (idx) {
+        name = idx.name;
+      }
+    } else if (parent_id) {
+      const idx = state.getState('TODOIST_SYNC')['items'].find((j) => {
+      return j.id === parent_id;
+      });
+      if (idx) {
+        name = idx.content;
+      }
+    } else {
+      const idx = state.getState('TODOIST_SYNC')['projects'].find((j) => {
+        return j.id === project_id;
+      });
+      if (idx) {
+        name = idx.name;
+      }
     }
 
-    var tasks = extract(state.getState('TODOIST_SYNC')['items']);
-    console.log(tasks);
-    const idx = state.getState('TODOIST_SYNC')['projects'].findIndex((j) => {
-      return j.id === project_id;
-    });
-    var name = `Project #${project_id}`;
-    if (idx > -1) {
-      name = state.getState('TODOIST_SYNC')['projects'][idx].name;
-    }
     $router.push(
       new Kai({
         name: 'tasksPage',
         data: {
           title: 'tasksPage',
-          tasks: tasks
+          tasks: tasks,
+          empty: true
         },
-        template: '<div style="padding:4px;"><style>.kui-software-key{height:0px}</style><b>NOTICE</b><br>Save button within the https://getpocket.com/explore is not working. Please use `Save to GetPocket` to save website you visited to your GetPocket account<br><br><b>Reader View</b><br>Parses html text (usually news and other articles) and returns title, author, main image and text content without nav bars, ads, footers, or anything that isn\'t the main body of the text. Analyzes each node, gives them a score, and determines what\'s relevant and what can be discarded<br><br> <b>Shortcut Key</b><br>* 1 Zoom-out<br> * 2 Reset zoom<br> * 3 Zoom-in<br> * 5 Hide/Show menu</div>',
+        templateUrl: document.location.origin + '/templates/tasks.html',
+        verticalNavClass: '.taskListNav',
         mounted: function() {
           this.$router.setHeaderTitle(name);
           state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+            if (tasks.length > 0) {
+              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
+            } else {
+              this.$router.setSoftKeyText('Menu', '', '');
+            }
+            if ((tasks.length - 1) < this.verticalNavIndex) {
+              this.verticalNavIndex--;
+            }
+            this.setData({empty: !(tasks.length > 0)});
         },
         unmounted: function() {
           state.removeStateListener('TODOIST_SYNC', this.methods.listenStateSync);
         },
         methods: {
           listenStateSync: function(data) {
-            var _tasks = extract(data['items']);
-            this.setData({tasks: _tasks});
+            var _tasks = extractItems(data['items'], project_id, parent_id, section_id);
+            if (_tasks.length > 0) {
+              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
+            } else {
+              this.$router.setSoftKeyText('Menu', '', '');
+            }
+            if ((_tasks.length - 1) < this.verticalNavIndex) {
+              this.verticalNavIndex--;
+            }
+            this.setData({tasks: _tasks, empty: !(_tasks.length > 0)});
             console.log(this.data.tasks);
+          },
+          selected: function() {
+            var task = this.data.tasks[this.verticalNavIndex];
+            if (task) {
+              if (task.has_subtask) {
+                tasksPage($router, task.project_id, task.id, null);
+              }
+            }
           }
         },
         softKeyText: { left: '', center: '', right: '' },
         softKeyListener: {
           left: function() {},
-          center: function() {},
+          center: function() {
+            if (this.verticalNavIndex > -1) {
+              const nav = document.querySelectorAll(this.verticalNavClass);
+              nav[this.verticalNavIndex].click();
+            }
+          },
           right: function() {}
+        },
+        dPadNavListener: {
+          arrowUp: function() {
+            if (this.verticalNavIndex === 0 || this.data.tasks.length === 0) {
+              return;
+            }
+            this.navigateListNav(-1);
+          },
+          arrowRight: function() {},
+          arrowDown: function() {
+            if (this.verticalNavIndex === (this.data.tasks.length - 1)  || this.data.tasks.length === 0) {
+              return;
+            }
+            this.navigateListNav(1);
+          }
         }
       })
     );
   }
 
   const sectionsPage = function($router, project_id) {
-    var sections = [];
-    state.getState('TODOIST_SYNC')['sections'].forEach((i) => {
-      if (i.project_id === project_id && i.is_deleted == 0) {
-        sections.push(i);
-      }
+
+    var sections = extractSections(state.getState('TODOIST_SYNC')['sections'], project_id);
+    const idx = state.getState('TODOIST_SYNC')['projects'].find((j) => {
+      return j.id === project_id;
     });
-    sections.sort((a,b) => (a.section_order > b.section_order) ? 1 : ((b.section_order > a.section_order) ? -1 : 0));
-    console.log(sections);
-    //sections.forEach((i) => {
-    //  tasksPage($router, i.project_id, null, i.id);
-    //});
+    var name = `Project #${project_id}`;
+    if (idx) {
+      name = idx.name;
+    }
+
+    $router.push(
+      new Kai({
+        name: 'sectionsPagee',
+        data: {
+          title: 'sectionsPage',
+          sections: sections,
+          empty: true
+        },
+        templateUrl: document.location.origin + '/templates/sections.html',
+        verticalNavClass: '.sectionListNav',
+        mounted: function() {
+          this.$router.setHeaderTitle(name);
+          state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+            if (sections.length > 0) {
+              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
+            } else {
+              this.$router.setSoftKeyText('Menu', '', '');
+            }
+            if ((sections.length - 1) < this.verticalNavIndex) {
+              this.verticalNavIndex--;
+            }
+            this.setData({empty: !(sections.length > 0)});
+        },
+        unmounted: function() {
+          state.removeStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+        },
+        methods: {
+          listenStateSync: function(data) {
+            var _sections = extractItems(data['sections'], project_id, parent_id, section_id);
+            if (_sections.length > 0) {
+              this.$router.setSoftKeyText('Menu', 'OPEN', 'More');
+            } else {
+              this.$router.setSoftKeyText('Menu', '', '');
+            }
+            if ((_sections.length - 1) < this.verticalNavIndex) {
+              this.verticalNavIndex--;
+            }
+            this.setData({sections: _sections, empty: !(_sections.length > 0)});
+            console.log(this.data.sections);
+          },
+          selected: function() {
+            var section = this.data.sections[this.verticalNavIndex];
+            if (section) {
+              tasksPage($router, section.project_id, null, section.id);
+            }
+          }
+        },
+        softKeyText: { left: '', center: '', right: '' },
+        softKeyListener: {
+          left: function() {},
+          center: function() {
+            if (this.verticalNavIndex > -1) {
+              const nav = document.querySelectorAll(this.verticalNavClass);
+              nav[this.verticalNavIndex].click();
+            }
+          },
+          right: function() {}
+        },
+        dPadNavListener: {
+          arrowUp: function() {
+            if (this.verticalNavIndex === 0 || this.data.sections.length === 0) {
+              return;
+            }
+            this.navigateListNav(-1);
+          },
+          arrowRight: function() {},
+          arrowDown: function() {
+            if (this.verticalNavIndex === (this.data.sections.length - 1)  || this.data.sections.length === 0) {
+              return;
+            }
+            this.navigateListNav(1);
+          }
+        }
+      })
+    );
   }
 
   const homepage = new Kai({

@@ -232,126 +232,21 @@ window.addEventListener("load", function() {
 
   const taskPage = function ($router, project_id) {}
 
-  const addProjectPage = new Kai({
-    name: 'addProjectPage',
-    data: {
-      title: '',
-      favorite: 'No',
-      color_hex: '#b8b8b8',
-      color_name: 'Grey',
-      color_index: 48
-    },
-    verticalNavClass: '.addTaskNav',
-    templateUrl: document.location.origin + '/templates/addProject.html',
-    mounted: function() {
-      this.$router.setHeaderTitle('Add Project');
-    },
-    unmounted: function() {},
-    methods: {
-      setFavorite: function() {
-        var menu = [
-          { "text": "Yes", "checked": false },
-          { "text": "No", "checked": false }
-        ];
-        const idx = menu.findIndex((opt) => {
-          return opt.text === this.data.favorite;
-        });
-        this.$router.showSingleSelector('Favorite', menu, 'Select', (selected) => {
-          this.setData({ favorite: selected.text });
-        }, 'Cancel', null, undefined, idx);
-      },
-      setColor: function() {
-        var colors = [];
-        for (var i in Todoist.Colors) {
-          colors.push({ "text": Todoist.Colors[i][0], "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
-        }
-        const idx = colors.findIndex((opt) => {
-          return opt.hex === this.data.color_hex;
-        });
-        this.$router.showSingleSelector('Color', colors, 'Select', (selected) => {
-          this.setData({ color_name: selected.text, color_hex: selected.hex, color_index: parseInt(selected.index) });
-        }, 'Cancel', null, undefined, idx);
-      }
-    },
-    softKeyText: { left: 'Back', center: 'SELECT', right: 'Add' },
-    softKeyListener: {
-      left: function() {
-        this.$router.pop();
-      },
-      center: function() {
-        const listNav = document.querySelectorAll(this.verticalNavClass);
-        if (this.verticalNavIndex > -1) {
-          if (listNav[this.verticalNavIndex]) {
-            listNav[this.verticalNavIndex].click();
-          }
-        }
-      },
-      right: function() {
-        if (window['TODOIST_API']) {
-          this.$router.showLoading();
-          window['TODOIST_API'].createProject(document.getElementById('project_title').value, null, this.data.color_index, (this.data.favorite === 'Yes' || false))
-          .then(() => {
-            this.$router.showToast('Success');
-          })
-          .catch((e) => {
-            var msg;
-            if (e.response) {
-              msg = e.response.toString();
-            } else {
-              msg = e.toString();
-            }
-            this.$router.showToast(msg);
-          })
-          .finally(() => {
-            this.$router.hideLoading();
-          });
-        }
-      }
-    },
-    softKeyInputFocusText: { left: 'Done', center: '', right: '' },
-    softKeyInputFocusListener: {
-      left: function() {
-        if (document.activeElement.tagName === 'INPUT') {
-          document.activeElement.blur();
-          this.dPadNavListener.arrowDown();
-        }
-      },
-      center: function() {},
-      right: function() {}
-    },
-    dPadNavListener: {
-      arrowUp: function() {
-        this.navigateListNav(-1);
-        this.data.title = document.getElementById('project_title').value;
-      },
-      arrowRight: function() {
-        // this.navigateTabNav(-1);
-      },
-      arrowDown: function() {
-        this.navigateListNav(1);
-        this.data.title = document.getElementById('project_title').value;
-      },
-      arrowLeft: function() {
-        // this.navigateTabNav(1);
-      },
-    }
-  });
-
-  const updateProjectPage = function($router, id, name, color, favorite) {
+  const addProjectPage = function($router, id, name, color, favorite) {
     $router.push(
       new Kai({
-        name: 'editProjectPage',
+        name: 'addProjectPage',
         data: {
-          title: name,
+          title: name || '',
           favorite: favorite ? 'Yes' : 'No',
-          color_hex: Todoist.Colors[color][1],
-          color_name: Todoist.Colors[color][0],
-          color_index: color
+          color_hex: color ? Todoist.Colors[color][1] : '#b8b8b8',
+          color_name: color ? Todoist.Colors[color][0] : 'Grey',
+          color_index: color || 48
         },
         verticalNavClass: '.addTaskNav',
         templateUrl: document.location.origin + '/templates/addProject.html',
         mounted: function() {
-          this.$router.setHeaderTitle('Edit Project');
+          this.$router.setHeaderTitle(id ? 'Update Project' : 'Add Project');
         },
         unmounted: function() {},
         methods: {
@@ -370,7 +265,7 @@ window.addEventListener("load", function() {
           setColor: function() {
             var colors = [];
             for (var i in Todoist.Colors) {
-              colors.push({ "text": Todoist.Colors[color][0], "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
+              colors.push({ "text": Todoist.Colors[i][0], "hex": Todoist.Colors[i][1], 'index': i,"checked": false });
             }
             const idx = colors.findIndex((opt) => {
               return opt.hex === this.data.color_hex;
@@ -380,7 +275,7 @@ window.addEventListener("load", function() {
             }, 'Cancel', null, undefined, idx);
           }
         },
-        softKeyText: { left: 'Back', center: 'SELECT', right: 'Update' },
+        softKeyText: { left: 'Back', center: 'SELECT', right: id ? 'Update' : 'Add' },
         softKeyListener: {
           left: function() {
             this.$router.pop();
@@ -396,8 +291,13 @@ window.addEventListener("load", function() {
           right: function() {
             if (window['TODOIST_API']) {
               this.$router.showLoading();
-              window['TODOIST_API'].updateProject(id, document.getElementById('project_title').value, this.data.color_index, (this.data.favorite === 'Yes' || false))
-              .then(() => {
+              var req;
+              if (id) {
+                req = window['TODOIST_API'].updateProject(id, document.getElementById('project_title').value, this.data.color_index, (this.data.favorite === 'Yes' || false))
+              } else {
+                req = window['TODOIST_API'].createProject(document.getElementById('project_title').value, null, this.data.color_index, (this.data.favorite === 'Yes' || false))
+              }
+              req.then(() => {
                 this.$router.showToast('Success');
               })
               .catch((e) => {
@@ -648,7 +548,47 @@ window.addEventListener("load", function() {
               nav[this.verticalNavIndex].click();
             }
           },
-          right: function() {}
+          right: function() {
+            var section = this.data.sections[this.verticalNavIndex];
+            if (section) {
+              var title = 'Options';
+              var menu = [
+                { "text": "Edit Section" },
+                { "text": "Delete Section" }
+              ];
+              this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
+                setTimeout(() => {
+                  if (selected.text === 'Edit Section') {
+                    addSectionPage($router, section.id, section.name);
+                  } else if (selected.text === 'Delete Section') {
+                    this.$router.showDialog('Confirm', 'Are you sure to delete ' + section.name + ' ?', null, 'Yes', () => {
+                      this.$router.showLoading();
+                      window['TODOIST_API'].deleteSection(section.id)
+                      .then(() => {
+                        this.$router.showToast('Success');
+                      })
+                      .catch((e) => {
+                        var msg;
+                        if (e.response) {
+                          msg = e.response.toString();
+                        } else {
+                          msg = e.toString();
+                        }
+                        this.$router.showToast(msg);
+                      })
+                      .finally(() => {
+                        this.$router.hideLoading();
+                      });
+                    }, 'No', () => {}, '', () => {}, () => {
+                      this.methods.toggleSoftKeyText();
+                    });
+                  }
+                }, 101);
+              }, () => {
+                this.methods.toggleSoftKeyText();
+              }, 0);
+            }
+          }
         },
         dPadNavListener: {
           arrowUp: function() {
@@ -671,31 +611,29 @@ window.addEventListener("load", function() {
     );
   }
 
-  const addSectionPage = function($router, project_id) {
+  const addSectionPage = function($router, project_id, name) {
     $router.push(
       new Kai({
-        name: 'addSectionPage',
+        name: name ? 'editSectionPage' : 'addSectionPage',
         data: {
-          title: ''
+          title: name || ''
         },
         verticalNavClass: '.addSectionNav',
         templateUrl: document.location.origin + '/templates/addSection.html',
         mounted: function() {
-          this.$router.setHeaderTitle('Add Section');
+          this.$router.setHeaderTitle(name ? 'Edit Section' : 'Add Section');
         },
         unmounted: function() {},
         methods: {},
-        softKeyText: { left: 'Back', center: 'SELECT', right: 'Add' },
+        softKeyText: { left: 'Back', center: 'SELECT', right: name ? 'Update' : 'Add' },
         softKeyListener: {
           left: function() {
             this.$router.pop();
           },
           center: function() {},
-          right: function() {
-            
-          }
+          right: function() {}
         },
-        softKeyInputFocusText: { left: 'Back', center: '', right: 'Add' },
+        softKeyInputFocusText: { left: 'Back', center: '', right: name ? 'Update' : 'Add' },
         softKeyInputFocusListener: {
           left: function() {
             if (document.activeElement.tagName === 'INPUT') {
@@ -708,8 +646,13 @@ window.addEventListener("load", function() {
             if (document.activeElement.tagName === 'INPUT') {
               if (window['TODOIST_API']) {
                 this.$router.showLoading();
-                window['TODOIST_API'].createSection(project_id, document.getElementById('section_title').value)
-                .then(() => {
+                var req;
+                if (name) {
+                  req = window['TODOIST_API'].updateSection(project_id, document.getElementById('section_title').value)
+                } else {
+                  req = window['TODOIST_API'].createSection(project_id, document.getElementById('section_title').value)
+                }
+                req.then(() => {
                   this.$router.showToast('Success');
                 })
                 .catch((e) => {
@@ -861,23 +804,25 @@ window.addEventListener("load", function() {
             ];
           }
           this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
-            if (selected.text === 'Login') {
-              loginPage(this.$router);
-            } else if (selected.text === 'Add Project') {
-              this.$router.push('addProjectPage');
-            } else if (selected.text === 'Logout') {
-              window['TODOIST_API'] = null;
-              localforage.removeItem('TODOIST_ACCESS_TOKEN');
-              localforage.removeItem('TODOIST_SYNC');
-              this.verticalNavIndex = 0;
-              this.setData({ TODOIST_ACCESS_TOKEN: null });
-              this.setData({ projects: [], offset: -1 });
-              this.$router.setSoftKeyRightText('Menu', '', '');
-            } else if (selected.text === 'Sync') {
-              this.methods.sync();
-            } else if (selected.text ===  'Help & Support') {
-              this.$router.push('helpSupportPage');
-            }
+            setTimeout(() => {
+              if (selected.text === 'Login') {
+                loginPage(this.$router);
+              } else if (selected.text === 'Add Project') {
+                addProjectPage(this.$router);
+              } else if (selected.text === 'Logout') {
+                window['TODOIST_API'] = null;
+                localforage.removeItem('TODOIST_ACCESS_TOKEN');
+                localforage.removeItem('TODOIST_SYNC');
+                this.verticalNavIndex = 0;
+                this.setData({ TODOIST_ACCESS_TOKEN: null });
+                this.setData({ projects: [], offset: -1 });
+                this.$router.setSoftKeyRightText('Menu', '', '');
+              } else if (selected.text === 'Sync') {
+                this.methods.sync();
+              } else if (selected.text ===  'Help & Support') {
+                this.$router.push('helpSupportPage');
+              }
+            }, 101);
           }, () => {
             this.methods.toggleSoftKeyText();
           }, 0);
@@ -893,25 +838,25 @@ window.addEventListener("load", function() {
         }
       },
       right: function() {
-        var title = 'Options';
-        var menu = [
-          { "text": "Show Tasks" },
-          { "text": "Show Sections" },
-          { "text": "Edit Project" },
-          { "text": "Comments" },
-          { "text": "Show Completed Tasks" },
-          { "text": "Delete Project" }
-        ];
-        this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
-          var proj = this.data.projects[this.verticalNavIndex];
-          if (proj) {
+        var proj = this.data.projects[this.verticalNavIndex];
+        if (proj) {
+          var title = 'Options';
+          var menu = [
+            { "text": "Show Tasks" },
+            { "text": "Show Sections" },
+            { "text": "Edit Project" },
+            { "text": "Comments" },
+            { "text": "Show Completed Tasks" },
+            { "text": "Delete Project" }
+          ];
+          this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
             setTimeout(() => {
               if (selected.text === 'Show Tasks') {
                 tasksPage(this.$router, proj.id, null, null);
               } else if (selected.text === 'Show Sections') {
                 sectionsPage(this.$router, proj.id);
               } else if (selected.text === 'Edit Project') {
-                updateProjectPage(this.$router, proj.id, proj.name, proj.color, proj.is_favorite);
+                addProjectPage(this.$router, proj.id, proj.name, proj.color, proj.is_favorite);
               } else if (selected.text === 'Show Completed Tasks') {
                 completedTasksPage(this.$router, proj.id);
               } else if (selected.text === 'Delete Project') {
@@ -938,10 +883,10 @@ window.addEventListener("load", function() {
                 });
               }
             }, 101);
-          }
-        }, () => {
-          this.methods.toggleSoftKeyText();
-        }, 0);
+          }, () => {
+            this.methods.toggleSoftKeyText();
+          }, 0);
+        }
       }
     },
     backKeyListener: function() {
@@ -975,10 +920,6 @@ window.addEventListener("load", function() {
       'helpSupportPage': {
         name: 'helpSupportPage',
         component: helpSupportPage
-      },
-      'addProjectPage': {
-        name: 'addProjectPage',
-        component: addProjectPage
       }
     }
   });

@@ -373,24 +373,30 @@ window.addEventListener("load", function() {
     var name = `Project #${project_id}`;
     if (section_id) {
       const idx = state.getState('TODOIST_SYNC')['sections'].find((j) => {
-      return j.id === section_id;
+      return j.id === section_id && j.is_deleted == 0;
       });
       if (idx) {
         name = idx.name;
+      } else {
+        $router.pop();
       }
     } else if (parent_id) {
       const idx = state.getState('TODOIST_SYNC')['items'].find((j) => {
-      return j.id === parent_id;
+      return j.id === parent_id && j.is_deleted == 0;
       });
       if (idx) {
         name = idx.content;
+      } else {
+        $router.pop();
       }
     } else {
       const idx = state.getState('TODOIST_SYNC')['projects'].find((j) => {
-        return j.id === project_id;
+        return j.id === project_id && j.is_deleted == 0;
       });
       if (idx) {
         name = idx.name;
+      } else {
+        $router.pop();
       }
     }
 
@@ -419,6 +425,28 @@ window.addEventListener("load", function() {
         },
         methods: {
           listenStateSync: function(data) {
+            if (section_id) {
+              const idx = data['sections'].find((j) => {
+              return j.id === section_id && j.is_deleted == 0;
+              });
+              if (!idx) {
+                $router.pop();
+              }
+            } else if (parent_id) {
+              const idx = data['items'].find((j) => {
+              return j.id === parent_id && j.is_deleted == 0;
+              });
+              if (!idx) {
+                $router.pop();
+              }
+            } else {
+              const idx = data['projects'].find((j) => {
+                return j.id === project_id && j.is_deleted == 0;
+              });
+              if (!idx) {
+                $router.pop();
+              }
+            }
             var _tasks = extractItems(data['items'], project_id, parent_id, section_id);
             if ((_tasks.length - 1) < this.verticalNavIndex) {
               this.verticalNavIndex--;
@@ -482,11 +510,13 @@ window.addEventListener("load", function() {
   const sectionsPage = function($router, project_id) {
 
     const idx = state.getState('TODOIST_SYNC')['projects'].find((j) => {
-      return j.id === project_id;
+      return j.id === project_id && j.is_deleted == 0;
     });
     var name = `Project #${project_id}`;
     if (idx) {
       name = idx.name;
+    } else {
+      $router.pop();
     }
 
     $router.push(
@@ -514,7 +544,12 @@ window.addEventListener("load", function() {
         },
         methods: {
           listenStateSync: function(data) {
-            console.log('listenStateSync sections');
+            const idx = data['projects'].find((j) => {
+              return j.id === project_id && j.is_deleted == 0;
+            });
+            if (!idx) {
+              $router.pop();
+            }
             var _sections = extractSections(data['sections'], project_id);
             if ((_sections.length - 1) < this.verticalNavIndex) {
               this.verticalNavIndex--;

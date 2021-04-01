@@ -18,6 +18,7 @@ window.addEventListener("load", function() {
             console.log('WS', TODOIST_SYNC.user.websocket_url);
             const ws = new WebSocket(TODOIST_SYNC.user.websocket_url);
             ws.onclose = function() {
+              initTodoistWebsocket();
               console.log('WS', 'onclose');
             }
             ws.onerror = function() {
@@ -228,10 +229,6 @@ window.addEventListener("load", function() {
     }));
   }
 
-  const projectPage = function ($router, project_id) {}
-
-  const taskPage = function ($router, project_id) {}
-
   const addProjectPage = function($router, id, name, color, favorite) {
     $router.push(
       new Kai({
@@ -243,7 +240,7 @@ window.addEventListener("load", function() {
           color_name: color ? Todoist.Colors[color][0] : 'Grey',
           color_index: color || 48
         },
-        verticalNavClass: '.addTaskNav',
+        verticalNavClass: '.addProjNav',
         templateUrl: document.location.origin + '/templates/addProject.html',
         mounted: function() {
           this.$router.setHeaderTitle(id ? 'Update Project' : 'Add Project');
@@ -346,26 +343,10 @@ window.addEventListener("load", function() {
     );
   }
 
-  const completedTasksPage = function($router, project_id) {
-    if (window['TODOIST_API']) {
-      $router.showLoading();
-      window['TODOIST_API'].getCompletedTasks(project_id)
-      .then((d) => {
-        console.log(d.response.items);
-      })
-      .catch((e) => {
-        var msg;
-        if (e.response) {
-          msg = e.response.toString();
-        } else {
-          msg = e.toString();
-        }
-        $router.showToast(msg);
-      })
-      .finally(() => {
-        $router.hideLoading();
-      });
-    }
+  const taskPage = function($router, task_id) {}
+
+  const addTaskPage = function($router, content=null, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null) {
+    
   }
 
   const tasksPage = function($router, project_id, parent_id, section_id) {
@@ -459,20 +440,18 @@ window.addEventListener("load", function() {
             var task = this.data.tasks[this.verticalNavIndex];
             if (task) {
               if (task.has_subtask) {
-                tasksPage($router, task.project_id, task.id, null);
+                //tasksPage($router, task.project_id, task.id, null);
               }
             }
           },
           toggleSoftKeyText: function(idx) {
-            if (this.data.tasks[idx]) {
-              if (this.data.tasks[idx].has_subtask) {
+            setTimeout(() => {
+              if (this.data.tasks[idx]) {
                 this.$router.setSoftKeyText('Add', 'OPEN', 'More');
               } else {
-                this.$router.setSoftKeyText('Add', '', 'More');
+                this.$router.setSoftKeyText('Add', '', '');
               }
-            } else {
-              this.$router.setSoftKeyText('Add', '', '');
-            }
+            }, 100);
           }
         },
         softKeyText: { left: '', center: '', right: '' },
@@ -484,7 +463,28 @@ window.addEventListener("load", function() {
               nav[this.verticalNavIndex].click();
             }
           },
-          right: function() {}
+          right: function() {
+            var task = this.data.tasks[this.verticalNavIndex];
+            if (task) {
+              var subtask = [];
+              if (task.has_subtask) {
+                subtask = [{ "text": "Sub Task" }]
+              }
+              var title = 'Options';
+              var menu = [
+                { "text": "Edit Task" },
+                { "text": "Delete Task" },
+                { "text": "Comments" },
+              ];
+              this.$router.showOptionMenu('Options', subtask.concat(menu), 'Select', (selected) => {
+                setTimeout(() => {
+                  console.log(selected, task);
+                }, 101);
+              }, () => {
+                this.methods.toggleSoftKeyText(this.verticalNavIndex);
+              }, 0);
+            }
+          }
         },
         dPadNavListener: {
           arrowUp: function() {
@@ -505,6 +505,28 @@ window.addEventListener("load", function() {
         }
       })
     );
+  }
+
+  const completedTasksPage = function($router, project_id) {
+    if (window['TODOIST_API']) {
+      $router.showLoading();
+      window['TODOIST_API'].getCompletedTasks(project_id)
+      .then((d) => {
+        console.log(d.response.items);
+      })
+      .catch((e) => {
+        var msg;
+        if (e.response) {
+          msg = e.response.toString();
+        } else {
+          msg = e.toString();
+        }
+        $router.showToast(msg);
+      })
+      .finally(() => {
+        $router.hideLoading();
+      });
+    }
   }
 
   const sectionsPage = function($router, project_id) {
@@ -565,11 +587,13 @@ window.addEventListener("load", function() {
             }
           },
           toggleSoftKeyText: function(idx) {
-            if (this.data.sections[idx]) {
-              this.$router.setSoftKeyText('Add', 'OPEN', 'More');
-            } else {
-              this.$router.setSoftKeyText('Add', '', '');
-            }
+            setTimeout(() => {
+              if (this.data.sections[idx]) {
+                this.$router.setSoftKeyText('Add', 'OPEN', 'More');
+              } else {
+                this.$router.setSoftKeyText('Add', '', '');
+              }
+            }, 100);
           }
         },
         softKeyText: { left: '', center: '', right: '' },
@@ -615,12 +639,12 @@ window.addEventListener("load", function() {
                         this.$router.hideLoading();
                       });
                     }, 'No', () => {}, '', () => {}, () => {
-                      this.methods.toggleSoftKeyText();
+                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
                     });
                   }
                 }, 101);
               }, () => {
-                this.methods.toggleSoftKeyText();
+                this.methods.toggleSoftKeyText(this.verticalNavIndex);
               }, 0);
             }
           }

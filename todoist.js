@@ -288,6 +288,9 @@ const Todoist = (function() {
     if (project_id != null) {
       data.project_id  = project_id;
     }
+    if (section_id != null) {
+      data.section_id = section_id;
+    }
     if (parent_id != null) {
       data.parent_id  = parent_id;
     }

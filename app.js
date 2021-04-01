@@ -59,6 +59,12 @@ window.addEventListener("load", function() {
     })
   }
 
+  function ymd(yourDate){
+    const offset = yourDate.getTimezoneOffset()
+    yourDate = new Date(yourDate.getTime() - (offset*60*1000))
+    return yourDate.toISOString().split('T')[0]
+  }
+
   function getURLParam(key, target) {
     var values = [];
     if (!target) target = location.href;
@@ -347,6 +353,145 @@ window.addEventListener("load", function() {
 
   const addTaskPage = function($router, content=null, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null) {
     
+    $router.push(
+      new Kai({
+        name: 'addProjectPage',
+        data: {
+          content: content || '',
+          priority: priority || 1,
+          due_date_str: due_date ? ymd(due_date) : 'No',
+          due_date: due_date || null,
+          due_datetime_str: due_datetime ? due_datetime.toLocaleTimeString() : 'No',
+          due_datetime: due_datetime || null,
+        },
+        verticalNavClass: '.addTaskNav',
+        templateUrl: document.location.origin + '/templates/addTask.html',
+        mounted: function() {
+          this.$router.setHeaderTitle(content ? 'Update Project' : 'Add Project');
+        },
+        unmounted: function() {},
+        methods: {
+          setPriority: function() {
+            var menu = [
+              { "text": "Priority 1", "val": 1, "checked": false },
+              { "text": "Priority 2", "val": 2, "checked": false },
+              { "text": "Priority 3", "val": 3, "checked": false },
+              { "text": "Priority 4", "val": 4, "checked": false }
+            ];
+            const idx = menu.findIndex((opt) => {
+              return parseInt(opt.val) === parseInt(this.data.priority);
+            });
+            this.$router.showSingleSelector('Priority', menu, 'Select', (selected) => {
+              this.setData({ priority: parseInt(selected.val) });
+            }, 'Cancel', null, undefined, idx);
+          },
+          setDate: function() {
+            var y,m,d;
+            var date = new Date(this.data.due_date);
+            if (this.data.due_date) {
+              y = date.getFullYear();
+              m = date.getMonth() + 1;
+              d = date.getDate();
+            }
+            this.$router.showDatePicker(y, m, d, (dt) => {
+              setTimeout(() => {
+                this.setData({ due_date_str: ymd(dt), due_date: dt });
+              }, 100);
+            }, () => {
+              this.setData({ due_date_str: 'No', due_date: null });
+            });
+          },
+          setTime: function() {
+            var HH,MM;
+            var date = new Date(this.data.due_datetime);
+            if (this.data.due_datetime) {
+              HH = date.getHours();
+              MM = date.getMinutes();
+            }
+            this.$router.showTimePicker(HH, MM, null, (dt) => {
+              setTimeout(() => {
+                this.setData({ due_datetime_str: dt.toLocaleTimeString(), due_datetime: dt });
+              }, 100);
+            }, () => {
+              this.setData({ due_datetime_str: 'No', due_datetime: null });
+            });
+          }
+        },
+        softKeyText: { left: 'Back', center: 'SELECT', right: content ? 'Update' : 'Add' },
+        softKeyListener: {
+          left: function() {
+            this.$router.pop();
+          },
+          center: function() {
+            const listNav = document.querySelectorAll(this.verticalNavClass);
+            if (this.verticalNavIndex > -1) {
+              if (listNav[this.verticalNavIndex]) {
+                listNav[this.verticalNavIndex].click();
+              }
+            }
+          },
+          right: function() {
+            var datetime = null;
+            if (this.data.due_datetime_str !== 'No') {
+              datetime = new Date(this.data.due_datetime).toISOString();
+            }
+            console.log(this.data.content, project_id, section_id, parent_id, order, label_ids, this.data.priority, due_string, (this.data.due_date_str === 'No' ? null : this.data.due_date_str), datetime, due_lang, assignee);
+            //return
+            if (window['TODOIST_API']) {
+              this.$router.showLoading();
+              var req;
+              if (content) {
+                req = window['TODOIST_API'].updateTask(project_id, this.data.content, label_ids, this.data.priority, due_string, (this.data.due_date_str === 'No' ? null : this.data.due_date_str), datetime, due_lang, assignee);
+              } else {
+                req = window['TODOIST_API'].createTask(this.data.content, project_id, section_id, parent_id, order, label_ids, this.data.priority, due_string, (this.data.due_date_str === 'No' ? null : this.data.due_date_str), datetime, due_lang, assignee);
+              }
+              req.then(() => {
+                this.$router.showToast('Success');
+              })
+              .catch((e) => {
+                var msg;
+                if (e.response) {
+                  msg = e.response.toString();
+                } else {
+                  msg = e.toString();
+                }
+                this.$router.showToast(msg);
+              })
+              .finally(() => {
+                this.$router.hideLoading();
+              });
+            }
+          }
+        },
+        softKeyInputFocusText: { left: 'Done', center: '', right: '' },
+        softKeyInputFocusListener: {
+          left: function() {
+            if (document.activeElement.tagName === 'INPUT') {
+              document.activeElement.blur();
+              this.dPadNavListener.arrowDown();
+            }
+          },
+          center: function() {},
+          right: function() {}
+        },
+        dPadNavListener: {
+          arrowUp: function() {
+            this.navigateListNav(-1);
+            this.data.content = document.getElementById('content').value;
+          },
+          arrowRight: function() {
+            // this.navigateTabNav(-1);
+          },
+          arrowDown: function() {
+            this.navigateListNav(1);
+            this.data.content = document.getElementById('content').value;
+          },
+          arrowLeft: function() {
+            // this.navigateTabNav(1);
+          },
+        }
+      })
+    );
   }
 
   const tasksPage = function($router, project_id, parent_id, section_id) {
@@ -456,7 +601,9 @@ window.addEventListener("load", function() {
         },
         softKeyText: { left: '', center: '', right: '' },
         softKeyListener: {
-          left: function() {},
+          left: function() {
+            addTaskPage(this.$router, null, project_id, section_id, parent_id);
+          },
           center: function() {
             if (this.verticalNavIndex > -1) {
               const nav = document.querySelectorAll(this.verticalNavClass);
@@ -478,7 +625,17 @@ window.addEventListener("load", function() {
               ];
               this.$router.showOptionMenu('Options', subtask.concat(menu), 'Select', (selected) => {
                 setTimeout(() => {
-                  console.log(selected, task);
+                  if (selected.text === 'Sub Task') {
+                    tasksPage($router, task.project_id, task.id, null);
+                  } else if ('Edit Task') {
+                    var date = null;
+                    if (task.due) {
+                      date = new Date(task.due.date);
+                    }
+                    addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, null, null, null);
+                  } else {
+                    console.log(selected, task);
+                  }
                 }, 101);
               }, () => {
                 this.methods.toggleSoftKeyText(this.verticalNavIndex);

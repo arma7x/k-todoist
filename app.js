@@ -621,18 +621,63 @@ window.addEventListener("load", function() {
               var menu = [
                 { "text": "Edit Task" },
                 { "text": "Delete Task" },
+                { "text": "Task Completed" },
                 { "text": "Comments" },
               ];
               this.$router.showOptionMenu('Options', subtask.concat(menu), 'Select', (selected) => {
                 setTimeout(() => {
                   if (selected.text === 'Sub Task') {
                     tasksPage($router, task.project_id, task.id, null);
-                  } else if ('Edit Task') {
+                  } else if (selected.text === 'Edit Task') {
                     var date = null;
                     if (task.due) {
                       date = new Date(task.due.date);
                     }
                     addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, null, null, null);
+                  } else if (selected.text === 'Delete Task') {
+                    this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {
+                      this.$router.showLoading();
+                      window['TODOIST_API'].deleteTask(task.id)
+                      .then(() => {
+                        this.$router.showToast('Success');
+                      })
+                      .catch((e) => {
+                        var msg;
+                        if (e.response) {
+                          msg = e.response.toString();
+                        } else {
+                          msg = e.toString();
+                        }
+                        this.$router.showToast(msg);
+                      })
+                      .finally(() => {
+                        this.$router.hideLoading();
+                      });
+                    }, 'No', () => {}, '', () => {}, () => {
+                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
+                    });
+                  } else if (selected.text === 'Task Completed') {
+                    this.$router.showDialog('Confirm', 'Are you sure task #' + task.id + '  was completed ?', null, 'Yes', () => {
+                      this.$router.showLoading();
+                      window['TODOIST_API'].deleteTask(task.id)
+                      .then(() => {
+                        this.$router.showToast('Success');
+                      })
+                      .catch((e) => {
+                        var msg;
+                        if (e.response) {
+                          msg = e.response.toString();
+                        } else {
+                          msg = e.toString();
+                        }
+                        this.$router.showToast(msg);
+                      })
+                      .finally(() => {
+                        this.$router.hideLoading();
+                      });
+                    }, 'No', () => {}, '', () => {}, () => {
+                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
+                    });
                   } else {
                     console.log(selected, task);
                   }

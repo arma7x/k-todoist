@@ -27,7 +27,10 @@
       <li class="taskListNav" style="border-bottom:1px dashed #320374;"  @click='selected()'>
         <div class="kui-row-center">
           <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{{ parsed_content }}}</h5>
-          {{#has_subtask}}<span style="size:12px;font-weight:bold;transform: scaleX(-1);">&#8629;</span>{{/has_subtask}}
+          <span style="display:flex;flex-direction:row;align-items:center;justify-content:center;">
+            {{#has_subtask}}<span style="font-weight:bold;transform: scaleX(-1);">&#128194;</span>{{/has_subtask}}
+            <span style="display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;background-color:#c0c0c0;color:#fff;width:16px;height:16px;border-radius:50%;">{{ priority }}</span>
+          </span>
         </div>
       </li>
       {{/tasks}}

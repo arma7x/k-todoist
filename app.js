@@ -15,9 +15,10 @@ window.addEventListener("load", function() {
       if (TODOIST_SYNC != null) {
         if (TODOIST_SYNC.user != null) {
           if (TODOIST_SYNC.user.websocket_url != null) {
-            // console.log('WS', TODOIST_SYNC.user.websocket_url);
+            console.log('WS', TODOIST_SYNC.user.websocket_url);
             const ws = new WebSocket(TODOIST_SYNC.user.websocket_url);
             ws.onclose = function() {
+              console.log('ws.onclose');
               initTodoistWebsocket();
             }
             ws.onmessage = function(msg) {
@@ -31,13 +32,14 @@ window.addEventListener("load", function() {
                       .finally(() => {
                         router.hideLoading();
                       })
-                      console.log(data.type);
+                      //console.log(data.type);
                     }
                   }
                 } catch (e) {}
               }
             }
             ws.onopen = function() {
+              console.log('ws.onopen');
               if (window['TODOIST_API'] != null ) {
                 router.showLoading();
                 window['TODOIST_API'].sync()
@@ -98,10 +100,10 @@ window.addEventListener("load", function() {
     items.forEach((i) => {
       if (i.project_id === project_id && i.parent_id === parent_id && i.section_id === section_id && i.is_deleted == 0) {
         const idx = items.findIndex((j) => {
-          return j.parent_id === i.id;
+          return j.parent_id === i.id && j.is_deleted == 0;
         });
         i.has_subtask = false;
-        i.parsed_content = snarkdown(i.content);
+        i.parsed_content = DOMPurify.sanitize(snarkdown(i.content));
         if (idx > -1) {
           i.has_subtask = true;
         }
@@ -168,6 +170,12 @@ window.addEventListener("load", function() {
         loginTab.iframe.setAttribute('height', '296px;');
         loginTab.iframe.setAttribute('style', 'padding:2px;');
         loginTab.iframe.setAttribute('frameBorder', '0');
+        loginTab.iframe.addEventListener('mozbrowserloadstart', () => {
+          $router.showLoading(false);
+        });
+        loginTab.iframe.addEventListener('mozbrowserloadend', () => {
+          this.$router.hideLoading();
+        });
         var container = document.querySelector('#login-container');
         var root1 = container.createShadowRoot();
         var root2 = container.createShadowRoot();
@@ -364,7 +372,39 @@ window.addEventListener("load", function() {
       return j.id === task_id;
     });
     if (idx) {
-      console.log(idx);
+      idx.parsed_content = DOMPurify.sanitize(snarkdown(idx.content));
+      var due = null;
+      if (idx.due) {
+        var date = new Date(idx.due.date);
+        due = ymd(date);
+        if (idx.due.date.indexOf('T') === 10) {
+          var datetime = new Date(idx.due.date);
+          due = datetime.toLocaleString();
+        }
+      }
+      $router.push(
+        new Kai({
+          name: 'taskPage',
+          data: {
+            title: 'taskPage',
+            task: idx,
+            due: due
+          },
+          templateUrl: document.location.origin + '/templates/task.html',
+          mounted: function() {
+            this.$router.setHeaderTitle(`#${idx.id}`);
+            navigator.spatialNavigationEnabled = false;
+          },
+          unmounted: function() {},
+          methods: {},
+          softKeyText: { left: '', center: '', right: '' },
+          softKeyListener: {
+            left: function() {},
+            center: function() {},
+            right: function() {}
+          }
+        })
+      );
     } else {
       $router.pop();
     }
@@ -522,10 +562,10 @@ window.addEventListener("load", function() {
 
   const tasksPage = function($router, project_id, parent_id, section_id) {
 
-    var name = `Project: ${project_id}`;
+    var name = `${project_id}`;
     if (section_id) {
       const idx = state.getState('TODOIST_SYNC')['sections'].find((j) => {
-      return j.id === section_id && j.is_deleted == 0;
+        return j.id === section_id && j.is_deleted == 0;
       });
       if (idx) {
         name = `Section: ${idx.name}`;
@@ -534,7 +574,7 @@ window.addEventListener("load", function() {
       }
     } else if (parent_id) {
       const idx = state.getState('TODOIST_SYNC')['items'].find((j) => {
-      return j.id === parent_id && j.is_deleted == 0;
+        return j.id === parent_id && j.is_deleted == 0;
       });
       if (idx) {
         name = `Sub Task: ${idx.content}`;
@@ -546,7 +586,7 @@ window.addEventListener("load", function() {
         return j.id === project_id && j.is_deleted == 0;
       });
       if (idx) {
-        name = `Project: ${idx.name}`;
+        name = `${idx.name}`;
       } else {
         $router.pop();
       }
@@ -638,21 +678,19 @@ window.addEventListener("load", function() {
           right: function() {
             var task = this.data.tasks[this.verticalNavIndex];
             if (task) {
-              var subtask = [];
-              if (task.has_subtask) {
-                subtask = [{ "text": "Open Sub Task" }]
-              }
               var title = 'Options';
               var menu = [
-                { "text": "Add Sub Task" },
+                { "text": task.has_subtask ? "Open Sub Task" : "Add Sub Task" },
                 { "text": "Edit Task" },
                 { "text": "Task Completed" },
                 { "text": "Delete Task" },
               ];
-              this.$router.showOptionMenu('Options', subtask.concat(menu), 'Select', (selected) => {
+              this.$router.showOptionMenu('Options', menu, 'Select', (selected) => {
                 setTimeout(() => {
                   if (selected.text === 'Open Sub Task') {
-                    tasksPage($router, task.project_id, task.id, null);
+                    tasksPage($router, task.project_id, task.id, section_id);
+                  } else if (selected.text === 'Add Sub Task') {
+                    addTaskPage(this.$router, null, project_id, section_id, task.id);
                   } else if (selected.text === 'Edit Task') {
                     var date = null;
                     var datetime = null;
@@ -743,9 +781,9 @@ window.addEventListener("load", function() {
     const idx = state.getState('TODOIST_SYNC')['projects'].find((j) => {
       return j.id === project_id && j.is_deleted == 0;
     });
-    var name = `Project: ${project_id}`;
+    var name = `${project_id}`;
     if (idx) {
-      name = `Project: ${idx.name}`;
+      name = `${idx.name}`;
     } else {
       $router.pop();
     }
@@ -975,7 +1013,7 @@ window.addEventListener("load", function() {
     templateUrl: document.location.origin + '/templates/homepage.html',
     mounted: function() {
       navigator.spatialNavigationEnabled = false;
-      this.$router.setHeaderTitle('Projects');
+      this.$router.setHeaderTitle('K-Todoist');
       this.$state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
       navigator.spatialNavigationEnabled = false;
       localforage.getItem('TODOIST_ACCESS_TOKEN')
@@ -984,7 +1022,10 @@ window.addEventListener("load", function() {
           this.setData({ TODOIST_ACCESS_TOKEN: TODOIST_ACCESS_TOKEN });
           if (window['TODOIST_API'] == null) {
             window['TODOIST_API'] = new Todoist(TODOIST_ACCESS_TOKEN, onCompleteSync);
-            this.methods.sync();
+            window['TODOIST_API'].sync()
+            .then(() => {
+              initTodoistWebsocket();
+            });
           }
           localforage.getItem('TODOIST_SYNC')
           .then((TODOIST_SYNC) => {
@@ -1004,15 +1045,8 @@ window.addEventListener("load", function() {
     methods: {
       sync: function() {
         if (window['TODOIST_API']) {
-          //this.$router.showToast('Sync');
           this.$router.showLoading();
           window['TODOIST_API'].sync()
-          .then((res) => {
-            //this.$router.showToast('Done Sync');
-          })
-          .catch(() => {
-            //this.$router.showToast('Error Sync');
-          })
           .finally(() => {
             this.$router.hideLoading();
           })
@@ -1027,7 +1061,7 @@ window.addEventListener("load", function() {
           }
         });
         if (projects.length > 0) {
-          this.$router.setSoftKeyText('Menu', 'TASKS', 'More');
+          this.$router.setSoftKeyText('Menu', '', 'More');
         } else {
           this.$router.setSoftKeyText('Menu', '', '');
         }
@@ -1036,13 +1070,13 @@ window.addEventListener("load", function() {
         }
         projects.sort((a,b) => (a.child_order > b.child_order) ? 1 : ((b.child_order > a.child_order) ? -1 : 0));
         this.setData({ projects: projects, empty: (projects.length === 0 ? true : false) });
-        console.log(projects);
+        // console.log(projects);
       },
       toggleSoftKeyText: function() {
         setTimeout(() => {
           if (!this.$router.bottomSheet) {
             if (this.data.projects.length > 0) {
-              this.$router.setSoftKeyText('Menu', 'TASKS', 'More');
+              this.$router.setSoftKeyText('Menu', '', 'More');
             } else {
               this.$router.setSoftKeyText('Menu', '', '');
             }
@@ -1105,23 +1139,26 @@ window.addEventListener("load", function() {
         });
       },
       center: function() {
-        if (this.verticalNavIndex > -1) {
-          const nav = document.querySelectorAll(this.verticalNavClass);
-          nav[this.verticalNavIndex].click();
-        }
+        //if (this.verticalNavIndex > -1) {
+        //  const nav = document.querySelectorAll(this.verticalNavClass);
+        //  nav[this.verticalNavIndex].click();
+        //}
       },
       right: function() {
         var proj = this.data.projects[this.verticalNavIndex];
         if (proj) {
           var title = 'Options';
           var menu = [
+            { "text": "Show Tasks" },
             { "text": "Show Sections" },
             { "text": "Edit Project" },
             { "text": "Delete Project" }
           ];
           this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
             setTimeout(() => {
-              if (selected.text === 'Show Sections') {
+              if (selected.text === 'Show Tasks') {
+                tasksPage(this.$router, proj.id, null, null);
+              } else if (selected.text === 'Show Sections') {
                 sectionsPage(this.$router, proj.id);
               } else if (selected.text === 'Edit Project') {
                 addProjectPage(this.$router, proj.id, proj.name, proj.color, proj.is_favorite);
@@ -1206,8 +1243,6 @@ window.addEventListener("load", function() {
     //console.log(e);
   }
 
-  initTodoistWebsocket();
-
   document.addEventListener('visibilitychange', () => {
     console.log(document.visibilityState)
   });
@@ -1218,7 +1253,7 @@ window.addEventListener("load", function() {
     slot: 'kaios',
     onerror: err => console.error(err),
     onready: ad => {
-      //ad.call('display')
+      ad.call('display')
     }
   })
 

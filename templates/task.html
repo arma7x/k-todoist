@@ -1,15 +1,17 @@
 <div class="kui-flex-wrap">
   <div style="padding:4px;">
+    <div style="margin-bottom:8px;">
+      <h5>Priority: {{ task.priority }}</h5>
+    </div>
+    {{#task.due}}
+    <div style="margin-bottom:8px;">
+      <h5>Due:</h5>
+      {{ due }}
+    </div>
+    {{/task.due}}
     <div>
       <h5>Content</h5>
       {{{ task.parsed_content }}}
-    </div></br>
-    <h5>Priority: {{ task.priority }}</h5></br>
-    {{#task.due}}
-      <div>
-        <h5>Due</h5>
-        {{ due }}
-      </div>
-    {{/task.due}}
+    </div>
   </div>
 </div>

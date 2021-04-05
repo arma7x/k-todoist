@@ -26,11 +26,21 @@
       {{#tasks}}
       <li class="taskListNav" style="border-bottom:1px dashed #320374;"  @click='selected()'>
         <div class="kui-row-center">
-          <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{{ parsed_content }}}</h5>
-          <span style="display:flex;flex-direction:row;align-items:center;justify-content:center;">
-            {{#has_subtask}}<span style="font-weight:bold;transform: scaleX(-1);">&#128194;</span>{{/has_subtask}}
-            <span style="display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;background-color:#c0c0c0;color:#fff;width:16px;height:16px;border-radius:50%;">{{ priority }}</span>
+          <span style="width:200px">
+            <div style>
+              <h5 style="font-weight:bold;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">{{{ parsed_content }}}</h5>
+            </div>
+            <div><small>Priority: {{ priority }}</small></div>
+            <div>
+              <small>Due: <span style="{{#is_due}}color:red;font-weight:bold;{{/is_due}}">{{ due_string }}</span></small>
+            </div>
           </span>
+          {{#has_subtask}}
+          <span style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <span style="font-weight:bold;transform: scaleX(-1);">&#128194;</span>
+            <span style="margin-top:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;background-color:#c0c0c0;color:#fff;width:16px;height:16px;border-radius:50%;">{{ total_subtask  }}</span>
+          </span>
+          {{/has_subtask}}
         </div>
       </li>
       {{/tasks}}

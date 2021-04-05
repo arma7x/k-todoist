@@ -95,6 +95,49 @@ window.addEventListener("load", function() {
     }
   }
 
+  function extractTodayItems(items) {
+    var now = new Date();
+    var _tasks = [];
+    items.forEach((i) => {
+      if (i.is_deleted == 0 && i.due != null && i.parent_id == null) {
+        const idx = items.findIndex((j) => {
+          return j.parent_id === i.id && j.is_deleted == 0;
+        });
+        i.is_due = false;
+        i.has_subtask = false;
+        i.total_subtask = 0;
+        i.parsed_content = DOMPurify.sanitize(snarkdown(i.content));
+        if (idx > -1) {
+          i.has_subtask = true;
+          const found = items.filter((k) => {
+            return k.parent_id === i.id && k.is_deleted == 0;
+          });
+          i.total_subtask = found.length;
+        }
+        i.due_string = '-';
+        var date = new Date(i.due.date);
+        if (date < now) {
+          i.is_due = true;
+        }
+        i.due_string = ymd(date);
+        if (i.due.date.indexOf('T') === 10) {
+          var datetime = new Date(i.due.date);
+          if (datetime < now) {
+            i.is_due = true;
+          } else {
+            i.is_due = false;
+          }
+          i.due_string = datetime.toLocaleString();
+        }
+        if (!i.has_subtask && (i.is_due || now.toLocaleDateString() === date.toLocaleDateString())) {
+          _tasks.push(i);
+        }
+      }
+    });
+    _tasks.sort((a,b) => (a.child_order > b.child_order) ? 1 : ((b.child_order > a.child_order) ? -1 : 0));
+    return _tasks;
+  }
+
   function extractItems(items, project_id, parent_id, section_id) {
     var _tasks = [];
     items.forEach((i) => {
@@ -102,10 +145,34 @@ window.addEventListener("load", function() {
         const idx = items.findIndex((j) => {
           return j.parent_id === i.id && j.is_deleted == 0;
         });
+        i.is_due = false;
         i.has_subtask = false;
+        i.total_subtask = 0;
         i.parsed_content = DOMPurify.sanitize(snarkdown(i.content));
         if (idx > -1) {
           i.has_subtask = true;
+          const found = items.filter((k) => {
+            return k.parent_id === i.id && k.is_deleted == 0;
+          });
+          i.total_subtask = found.length;
+        }
+        i.due_string = '-';
+        if (i.due) {
+          var now = new Date();
+          var date = new Date(i.due.date);
+          if (date < now) {
+            i.is_due = true;
+          }
+          i.due_string = ymd(date);
+          if (i.due.date.indexOf('T') === 10) {
+            var datetime = new Date(i.due.date);
+            if (datetime < now) {
+              i.is_due = true;
+            } else {
+              i.is_due = false;
+            }
+            i.due_string = datetime.toLocaleString();
+          }
         }
         _tasks.push(i);
       }
@@ -130,7 +197,22 @@ window.addEventListener("load", function() {
     data: {
       title: 'helpSupportPage'
     },
-    template: '<div style="padding:4px;"><style>.kui-software-key{height:0px}</style><b>NOTICE</b><br>Save button within the https://getpocket.com/explore is not working. Please use `Save to GetPocket` to save website you visited to your GetPocket account<br><br><b>Reader View</b><br>Parses html text (usually news and other articles) and returns title, author, main image and text content without nav bars, ads, footers, or anything that isn\'t the main body of the text. Analyzes each node, gives them a score, and determines what\'s relevant and what can be discarded<br><br> <b>Shortcut Key</b><br>* 1 Zoom-out<br> * 2 Reset zoom<br> * 3 Zoom-in<br> * 5 Hide/Show menu</div>',
+    template: `<div style="padding:4px;"><style>.kui-software-key{height:0px}</style>
+      <h5>Premium features are not available(maybe implemented on next update):</h5>
+      <ul>
+        <li>1. Backups</li>
+        <li>2. Archive a project</li>
+        <li>3. Unarchive a project</li>
+        <li>4. Filters</li>
+        <li>5. Label</li>
+        <li>6. User settings</li>
+        <li>7. Templates</li>
+        <li>8. Reminders</li>
+        <li>9. Get all completed items(Task)</li>
+        <li>10. Project Notes(Project Comment)</li>
+        <li>11. Item Notes(Task Comment)</li>
+      </ul>
+    </div>`,
     mounted: function() {
       this.$router.setHeaderTitle('Help & Support');
       navigator.spatialNavigationEnabled = false;
@@ -502,7 +584,7 @@ window.addEventListener("load", function() {
               dt.setFullYear(d.getFullYear());
               datetime = dt.toISOString();
             }
-            console.log(this.data.content, project_id, section_id, parent_id, order, label_ids, this.data.priority, due_string, date, datetime, due_lang, assignee);
+            // console.log(this.data.content, project_id, section_id, parent_id, order, label_ids, this.data.priority, due_string, date, datetime, due_lang, assignee);
             if (window['TODOIST_API']) {
               this.$router.showLoading();
               var req;
@@ -692,6 +774,165 @@ window.addEventListener("load", function() {
                   } else if (selected.text === 'Add Sub Task') {
                     addTaskPage(this.$router, null, project_id, section_id, task.id);
                   } else if (selected.text === 'Edit Task') {
+                    var date = null;
+                    var datetime = null;
+                    if (task.due) {
+                      date = new Date(task.due.date);
+                      if (task.due.date.indexOf('T') === 10) {
+                        datetime = new Date(task.due.date);
+                      }
+                    }
+                    addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null);
+                  } else if (selected.text === 'Delete Task') {
+                    this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {
+                      this.$router.showLoading();
+                      window['TODOIST_API'].deleteTask(task.id)
+                      .then(() => {
+                        this.$router.showToast('Success');
+                      })
+                      .catch((e) => {
+                        var msg;
+                        if (e.response) {
+                          msg = e.response.toString();
+                        } else {
+                          msg = e.toString();
+                        }
+                        this.$router.showToast(msg);
+                      })
+                      .finally(() => {
+                        this.$router.hideLoading();
+                      });
+                    }, 'No', () => {}, '', () => {}, () => {
+                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
+                    });
+                  } else if (selected.text === 'Task Completed') {
+                    this.$router.showDialog('Confirm', 'Are you sure task #' + task.id + '  was completed ?', null, 'Yes', () => {
+                      this.$router.showLoading();
+                      window['TODOIST_API'].deleteTask(task.id)
+                      .then(() => {
+                        this.$router.showToast('Success');
+                      })
+                      .catch((e) => {
+                        var msg;
+                        if (e.response) {
+                          msg = e.response.toString();
+                        } else {
+                          msg = e.toString();
+                        }
+                        this.$router.showToast(msg);
+                      })
+                      .finally(() => {
+                        this.$router.hideLoading();
+                      });
+                    }, 'No', () => {}, '', () => {}, () => {
+                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
+                    });
+                  } else {
+                    console.log(selected, task);
+                  }
+                }, 101);
+              }, () => {
+                this.methods.toggleSoftKeyText(this.verticalNavIndex);
+              }, 0);
+            }
+          }
+        },
+        dPadNavListener: {
+          arrowUp: function() {
+            if (this.verticalNavIndex === 0 || this.data.tasks.length === 0) {
+              return;
+            }
+            this.navigateListNav(-1);
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
+          },
+          arrowRight: function() {},
+          arrowDown: function() {
+            if (this.verticalNavIndex === (this.data.tasks.length - 1)  || this.data.tasks.length === 0) {
+              return;
+            }
+            this.navigateListNav(1);
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
+          }
+        }
+      })
+    );
+  }
+
+  const todayTasksPage = function($router) {
+
+    $router.push(
+      new Kai({
+        name: 'todayTasksPage',
+        data: {
+          title: 'todayTasksPage',
+          tasks: [],
+          empty: true
+        },
+        templateUrl: document.location.origin + '/templates/tasks.html',
+        verticalNavClass: '.taskListNav',
+        mounted: function() {
+          navigator.spatialNavigationEnabled = false;
+          this.$router.setHeaderTitle('Today');
+          state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+          var tasks = extractTodayItems(state.getState('TODOIST_SYNC')['items']);
+          if ((tasks.length - 1) < this.verticalNavIndex) {
+            this.verticalNavIndex--;
+          }
+          this.setData({tasks: tasks, empty: !(tasks.length > 0)});
+          this.methods.toggleSoftKeyText(this.verticalNavIndex);
+        },
+        unmounted: function() {
+          state.removeStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+        },
+        methods: {
+          listenStateSync: function(data) {
+            var _tasks = extractTodayItems(data['items']);
+            if ((_tasks.length - 1) < this.verticalNavIndex) {
+              this.verticalNavIndex--;
+            }
+            this.setData({tasks: _tasks, empty: !(_tasks.length > 0)});
+            this.methods.toggleSoftKeyText(this.verticalNavIndex);
+            console.log(this.data.tasks);
+          },
+          selected: function() {
+            var task = this.data.tasks[this.verticalNavIndex];
+            if (task) {
+              taskPage($router, task.id);
+            }
+          },
+          toggleSoftKeyText: function(idx) {
+            setTimeout(() => {
+              if (this.data.tasks[idx]) {
+                this.$router.setSoftKeyText('', 'VIEW', 'More');
+              } else {
+                this.$router.setSoftKeyText('', '', '');
+              }
+            }, 100);
+          }
+        },
+        softKeyText: { left: '', center: '', right: '' },
+        softKeyListener: {
+          left: function() {
+            //addTaskPage(this.$router, null, project_id, section_id, parent_id);
+          },
+          center: function() {
+            if (this.verticalNavIndex > -1) {
+              const nav = document.querySelectorAll(this.verticalNavClass);
+              nav[this.verticalNavIndex].click();
+            }
+          },
+          right: function() {
+            var task = this.data.tasks[this.verticalNavIndex];
+            if (task) {
+              var title = 'Options';
+              var menu = [
+                { "text": "Edit Task" },
+                { "text": "Task Completed" },
+                { "text": "Delete Task" },
+              ];
+              this.$router.showOptionMenu('Options', menu, 'Select', (selected) => {
+                setTimeout(() => {
+                  if (selected.text === 'Edit Task') {
                     var date = null;
                     var datetime = null;
                     if (task.due) {
@@ -1107,6 +1348,7 @@ window.addEventListener("load", function() {
               { "text": "Help & Support" },
               { "text": "Sync" },
               { "text": "Add Project" },
+              { "text": "Today" },
               { "text": "Logout" }
             ];
           }
@@ -1126,8 +1368,10 @@ window.addEventListener("load", function() {
                 this.$router.setSoftKeyText('Menu', '', '');
               } else if (selected.text === 'Sync') {
                 this.methods.sync();
-              } else if (selected.text ===  'Help & Support') {
+              } else if (selected.text === 'Help & Support') {
                 this.$router.push('helpSupportPage');
+              } else if (selected.text === 'Today') {
+                todayTasksPage(this.$router);
               }
             }, 101);
           }, () => {

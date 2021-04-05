@@ -15,10 +15,10 @@ window.addEventListener("load", function() {
       if (TODOIST_SYNC != null) {
         if (TODOIST_SYNC.user != null) {
           if (TODOIST_SYNC.user.websocket_url != null) {
-            console.log('WS', TODOIST_SYNC.user.websocket_url);
+            // console.log('WS', TODOIST_SYNC.user.websocket_url);
             const ws = new WebSocket(TODOIST_SYNC.user.websocket_url);
             ws.onclose = function() {
-              console.log('ws.onclose');
+              // console.log('ws.onclose');
               initTodoistWebsocket();
             }
             ws.onmessage = function(msg) {
@@ -32,14 +32,14 @@ window.addEventListener("load", function() {
                       .finally(() => {
                         router.hideLoading();
                       })
-                      //console.log(data.type);
+                      // console.log(data.type);
                     }
                   }
                 } catch (e) {}
               }
             }
             ws.onopen = function() {
-              console.log('ws.onopen');
+              // console.log('ws.onopen');
               if (window['TODOIST_API'] != null ) {
                 router.showLoading();
                 window['TODOIST_API'].sync()
@@ -61,7 +61,7 @@ window.addEventListener("load", function() {
     localforage.setItem('TODOIST_SYNC', data)
     .then((TODOIST_SYNC) => {
       state.setState('TODOIST_SYNC', TODOIST_SYNC);
-      console.log('onCompleteSync');
+      // console.log('onCompleteSync');
     })
   }
 
@@ -266,7 +266,7 @@ window.addEventListener("load", function() {
         root2.appendChild(shadow);
         loginTab.iframe.addEventListener('mozbrowserlocationchange', function (e) {
           if (e.detail.url.indexOf('https://malaysiaapi.herokuapp.com/todoist/api/v1/redirect') > -1) {
-            console.log(window['loginTab'].url.url);
+            // console.log(window['loginTab'].url.url);
             const codeToken = getURLParam('code', window['loginTab'].url.url);
             const stateToken = getURLParam('state', window['loginTab'].url.url);
             if (codeToken.length > 0 && stateToken.length > 0) {
@@ -728,7 +728,7 @@ window.addEventListener("load", function() {
             }
             this.setData({tasks: _tasks, empty: !(_tasks.length > 0)});
             this.methods.toggleSoftKeyText(this.verticalNavIndex);
-            console.log(this.data.tasks);
+            // console.log(this.data.tasks);
           },
           selected: function() {
             var task = this.data.tasks[this.verticalNavIndex];
@@ -828,7 +828,7 @@ window.addEventListener("load", function() {
                       this.methods.toggleSoftKeyText(this.verticalNavIndex);
                     });
                   } else {
-                    console.log(selected, task);
+                    // console.log(selected, task);
                   }
                 }, 101);
               }, () => {
@@ -892,7 +892,7 @@ window.addEventListener("load", function() {
             }
             this.setData({tasks: _tasks, empty: !(_tasks.length > 0)});
             this.methods.toggleSoftKeyText(this.verticalNavIndex);
-            console.log(this.data.tasks);
+            // console.log(this.data.tasks);
           },
           selected: function() {
             var task = this.data.tasks[this.verticalNavIndex];
@@ -987,7 +987,7 @@ window.addEventListener("load", function() {
                       this.methods.toggleSoftKeyText(this.verticalNavIndex);
                     });
                   } else {
-                    console.log(selected, task);
+                    // console.log(selected, task);
                   }
                 }, 101);
               }, () => {
@@ -1067,7 +1067,7 @@ window.addEventListener("load", function() {
             }
             this.setData({sections: _sections, empty: !(_sections.length > 0)});
             this.methods.toggleSoftKeyText(this.verticalNavIndex);
-            console.log(this.data.sections);
+            // console.log(this.data.sections);
           },
           selected: function() {
             var section = this.data.sections[this.verticalNavIndex];
@@ -1379,7 +1379,7 @@ window.addEventListener("load", function() {
           }, 0);
         })
         .catch((err) => {
-          //console.log(err);
+          // console.log(err);
         });
       },
       center: function() {
@@ -1484,11 +1484,11 @@ window.addEventListener("load", function() {
   try {
     app.mount('app');
   } catch(e) {
-    //console.log(e);
+    // console.log(e);
   }
 
   document.addEventListener('visibilitychange', () => {
-    console.log(document.visibilityState)
+    // console.log(document.visibilityState)
   });
 
   getKaiAd({

@@ -4,6 +4,7 @@ window.addEventListener("load", function() {
 
   const CLIENT_ID = "37243c41f091443492812b2782548508";
   const SCOPE = 'task:add,data:read,data:read_write,data:delete,project:delete';
+  var IFRAME_TIMER;
 
   const state = new KaiState({
     'TODOIST_SYNC': {},
@@ -99,7 +100,7 @@ window.addEventListener("load", function() {
     var now = new Date();
     var _tasks = [];
     items.forEach((i) => {
-      if (i.is_deleted == 0 && i.due != null && i.parent_id == null) {
+      if (i.is_deleted == 0 && i.due != null) {
         const idx = items.findIndex((j) => {
           return j.parent_id === i.id && j.is_deleted == 0;
         });
@@ -228,6 +229,10 @@ window.addEventListener("load", function() {
   });
 
   const loginPage = function($router) {
+    var ping = new XMLHttpRequest({ mozSystem: true });
+    ping.open('GET', 'https://malaysiaapi.herokuapp.com/', true);
+    ping.send();
+
     var salt = window.crypto.getRandomValues(new Uint32Array(10))[0].toString();
     const hashids2 = new Hashids(salt, 15);
     const random = hashids2.encode(1);
@@ -270,34 +275,37 @@ window.addEventListener("load", function() {
             const codeToken = getURLParam('code', window['loginTab'].url.url);
             const stateToken = getURLParam('state', window['loginTab'].url.url);
             if (codeToken.length > 0 && stateToken.length > 0) {
-              var oauthAuthorize = new XMLHttpRequest({ mozSystem: true });
-              oauthAuthorize.open('GET', 'https://malaysiaapi.herokuapp.com/todoist/api/v1/exchange_token?code=' + codeToken[0], true);
-              oauthAuthorize.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-              oauthAuthorize.setRequestHeader("X-Accept", 'application/json');
-              oauthAuthorize.onreadystatechange = function() {
-                if(oauthAuthorize.readyState == 4 && oauthAuthorize.status == 200) {
-                  if (oauthAuthorize.response) {
-                    var obj = JSON.parse(oauthAuthorize.response);
-                    localforage.setItem('TODOIST_ACCESS_TOKEN', obj.data)
-                    $router.showToast('Login Success');
-                    $router.pop();
-                  } else {
+              setTimeout(() => {
+                var oauthAuthorize = new XMLHttpRequest({ mozSystem: true });
+                oauthAuthorize.open('GET', 'https://malaysiaapi.herokuapp.com/todoist/api/v1/exchange_token?code=' + codeToken[0], true);
+                oauthAuthorize.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+                oauthAuthorize.setRequestHeader("X-Accept", 'application/json');
+                oauthAuthorize.onreadystatechange = function() {
+                  if(oauthAuthorize.readyState == 4 && oauthAuthorize.status == 200) {
+                    if (oauthAuthorize.response) {
+                      var obj = JSON.parse(oauthAuthorize.response);
+                      localforage.setItem('TODOIST_ACCESS_TOKEN', obj.data)
+                      $router.showToast('Login Success');
+                      $router.hideLoading()
+                      $router.pop();
+                    } else {
+                      $router.hideLoading()
+                      $router.showToast('Invalid response');
+                      $router.pop();
+                    }
+                  } else if (oauthAuthorize.status == 403) {
                     $router.hideLoading()
-                    $router.showToast('Invalid response');
+                    $router.showToast('Unauthorize 403');
+                    $router.pop();
+                  } else if (oauthAuthorize.readyState == 4) {
+                    $router.hideLoading()
+                    $router.showToast('Unknown Error');
                     $router.pop();
                   }
-                } else if (oauthAuthorize.status == 403) {
-                  $router.hideLoading()
-                  $router.showToast('Unauthorize 403');
-                  $router.pop();
-                } else if (oauthAuthorize.readyState == 4) {
-                  $router.hideLoading()
-                  $router.showToast('Unknown Error');
-                  $router.pop();
                 }
-              }
-              $router.showLoading();
-              oauthAuthorize.send();
+                $router.showLoading();
+                oauthAuthorize.send();
+              }, 500);
             }
           }
         });
@@ -402,6 +410,7 @@ window.addEventListener("load", function() {
               }
               req.then(() => {
                 this.$router.showToast('Success');
+                this.$router.pop();
               })
               .catch((e) => {
                 var msg;
@@ -595,6 +604,7 @@ window.addEventListener("load", function() {
               }
               req.then(() => {
                 this.$router.showToast('Success');
+                this.$router.pop();
               })
               .catch((e) => {
                 var msg;
@@ -1203,6 +1213,7 @@ window.addEventListener("load", function() {
                 }
                 req.then(() => {
                   this.$router.showToast('Success');
+                  this.$router.pop();
                 })
                 .catch((e) => {
                   var msg;
@@ -1487,8 +1498,40 @@ window.addEventListener("load", function() {
     // console.log(e);
   }
 
+  IFRAME_TIMER = setInterval(() => {
+    if (document.activeElement.tagName === 'IFRAME') {
+      navigator.spatialNavigationEnabled = true;
+    }
+  }, 500);
+
   document.addEventListener('visibilitychange', () => {
-    // console.log(document.visibilityState)
+    if (app.$router.stack.length === 1) {
+      setTimeout(() => {
+        navigator.spatialNavigationEnabled = false;
+      }, 500);
+    }
+
+    if (document.activeElement.tagName === 'IFRAME') {
+      document.activeElement.blur();
+    }
+    
+    if (document.visibilityState === 'hidden') {
+      if (IFRAME_TIMER) {
+        clearInterval(IFRAME_TIMER);
+      }
+    } else if (document.visibilityState === 'visible') {
+      const browser = app.$router.stack[app.$router.stack.length - 1];
+      if (browser.name === 'browser') {
+        if (document.activeElement.tagName !== 'IFRAME') {
+          navigator.spatialNavigationEnabled = true;
+        }
+      }
+      IFRAME_TIMER = setInterval(() => {
+        if (document.activeElement.tagName === 'IFRAME') {
+          navigator.spatialNavigationEnabled = true;
+        }
+      }, 500);
+    }
   });
 
   getKaiAd({

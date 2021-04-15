@@ -1504,6 +1504,20 @@ window.addEventListener("load", function() {
     }
   }, 500);
 
+  function displayKaiAds() {
+    getKaiAd({
+      publisher: 'ac3140f7-08d6-46d9-aa6f-d861720fba66',
+      app: 'k-todoist',
+      slot: 'kaios',
+      onerror: err => console.error(err),
+      onready: ad => {
+        ad.call('display')
+      }
+    })
+  }
+
+  displayKaiAds();
+
   document.addEventListener('visibilitychange', () => {
     if (app.$router.stack.length === 1) {
       setTimeout(() => {
@@ -1520,6 +1534,7 @@ window.addEventListener("load", function() {
         clearInterval(IFRAME_TIMER);
       }
     } else if (document.visibilityState === 'visible') {
+      displayKaiAds();
       const browser = app.$router.stack[app.$router.stack.length - 1];
       if (browser.name === 'browser') {
         if (document.activeElement.tagName !== 'IFRAME') {
@@ -1533,15 +1548,5 @@ window.addEventListener("load", function() {
       }, 500);
     }
   });
-
-  getKaiAd({
-    publisher: 'ac3140f7-08d6-46d9-aa6f-d861720fba66',
-    app: 'k-todoist',
-    slot: 'kaios',
-    onerror: err => console.error(err),
-    onready: ad => {
-      ad.call('display')
-    }
-  })
 
 });

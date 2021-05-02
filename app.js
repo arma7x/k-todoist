@@ -1352,7 +1352,8 @@ window.addEventListener("load", function() {
           var title = 'Menu';
           var menu = [
             { "text": "Help & Support" },
-            { "text": "Login" }
+            { "text": "Login" },
+            { "text": "Kill App" }
           ];
           if (res) {
             menu = [
@@ -1360,7 +1361,8 @@ window.addEventListener("load", function() {
               { "text": "Sync" },
               { "text": "Add Project" },
               { "text": "Today" },
-              { "text": "Logout" }
+              { "text": "Logout" },
+              { "text": "Kill App" }
             ];
           }
           this.$router.showOptionMenu(title, menu, 'Select', (selected) => {
@@ -1383,6 +1385,8 @@ window.addEventListener("load", function() {
                 this.$router.push('helpSupportPage');
               } else if (selected.text === 'Today') {
                 todayTasksPage(this.$router);
+              } else if (selected.text === 'Kill App') {
+                window.close();
               }
             }, 101);
           }, () => {

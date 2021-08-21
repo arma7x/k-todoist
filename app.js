@@ -1110,49 +1110,53 @@ window.addEventListener("load", function() {
                     }
                     addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null, task.description);
                   } else if (selected.text === 'Delete Task') {
-                    this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {
-                      this.$router.showLoading();
-                      window['TODOIST_API'].deleteTask(task.id)
-                      .then(() => {
-                        this.$router.showToast('Success');
-                      })
-                      .catch((e) => {
-                        var msg;
-                        if (e.response) {
-                          msg = e.response.toString();
-                        } else {
-                          msg = e.toString();
-                        }
-                        this.$router.showToast(msg);
-                      })
-                      .finally(() => {
-                        this.$router.hideLoading();
+                    setTimeout(() => {
+                      this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {
+                        this.$router.showLoading();
+                        window['TODOIST_API'].deleteTask(task.id)
+                        .then(() => {
+                          this.$router.showToast('Success');
+                        })
+                        .catch((e) => {
+                          var msg;
+                          if (e.response) {
+                            msg = e.response.toString();
+                          } else {
+                            msg = e.toString();
+                          }
+                          this.$router.showToast(msg);
+                        })
+                        .finally(() => {
+                          this.$router.hideLoading();
+                        });
+                      }, 'No', () => {}, '', () => {}, () => {
+                        this.methods.toggleSoftKeyText(this.verticalNavIndex);
                       });
-                    }, 'No', () => {}, '', () => {}, () => {
-                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
-                    });
+                    }, 100);
                   } else if (selected.text === 'Task Completed') {
-                    this.$router.showDialog('Confirm', 'Are you sure task #' + task.id + '  was completed ?', null, 'Yes', () => {
-                      this.$router.showLoading();
-                      window['TODOIST_API'].deleteTask(task.id)
-                      .then(() => {
-                        this.$router.showToast('Success');
-                      })
-                      .catch((e) => {
-                        var msg;
-                        if (e.response) {
-                          msg = e.response.toString();
-                        } else {
-                          msg = e.toString();
-                        }
-                        this.$router.showToast(msg);
-                      })
-                      .finally(() => {
-                        this.$router.hideLoading();
+                    setTimeout(() => {
+                      this.$router.showDialog('Confirm', 'Are you sure task #' + task.id + '  was completed ?', null, 'Yes', () => {
+                        this.$router.showLoading();
+                        window['TODOIST_API'].deleteTask(task.id)
+                        .then(() => {
+                          this.$router.showToast('Success');
+                        })
+                        .catch((e) => {
+                          var msg;
+                          if (e.response) {
+                            msg = e.response.toString();
+                          } else {
+                            msg = e.toString();
+                          }
+                          this.$router.showToast(msg);
+                        })
+                        .finally(() => {
+                          this.$router.hideLoading();
+                        });
+                      }, 'No', () => {}, '', () => {}, () => {
+                        this.methods.toggleSoftKeyText(this.verticalNavIndex);
                       });
-                    }, 'No', () => {}, '', () => {}, () => {
-                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
-                    });
+                    }, 100);
                   } else {
                     // console.log(selected, task);
                   }

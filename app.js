@@ -1064,7 +1064,9 @@ window.addEventListener("load", function() {
           selected: function() {
             var task = this.data.tasks[this.verticalNavIndex];
             if (task) {
-              taskPage($router, task.id);
+              setTimeout(() => {
+                taskPage($router, task.id);
+              }, 100);
             }
           },
           toggleSoftKeyText: function(idx) {
@@ -1108,7 +1110,9 @@ window.addEventListener("load", function() {
                         datetime = new Date(task.due.date);
                       }
                     }
-                    addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null, task.description);
+                    setTimeout(() => {
+                      addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null, task.description);
+                    }, 100);
                   } else if (selected.text === 'Delete Task') {
                     setTimeout(() => {
                       this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {

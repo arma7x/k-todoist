@@ -266,7 +266,7 @@ const Todoist = (function() {
   }
 
   // POST https://api.todoist.com/rest/v1/tasks
-  Todoist.prototype.createTask = function(content, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null) {
+  Todoist.prototype.createTask = function(content, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null, description = null) {
     // * content      String            Yes Task content. This value may contain markdown-formatted text and hyperlinks. Details on markdown support can be found in the Text Formatting article in the Help Center.
     // * project_id   Integer           No  Task project ID. If not set, task is put to user's Inbox.
     // * section_id   Integer           No  ID of section to put task into.
@@ -318,6 +318,9 @@ const Todoist = (function() {
     if (assignee != null) {
       data.assignee = assignee;
     }
+    if (description != null) {
+      data.description = description;
+    }
     return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/tasks`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
@@ -331,7 +334,7 @@ const Todoist = (function() {
   }
 
   // POST https://api.todoist.com/rest/v1/tasks/2995104339
-  Todoist.prototype.updateTask = function(id, content, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null) { // TODO
+  Todoist.prototype.updateTask = function(id, content, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null, description = null) { // TODO
     // * content        String            Yes Task content. This value may contain markdown-formatted text and hyperlinks. Details on markdown support can be found in the Text Formatting article in the Help Center.
     // * label_ids      Array of Integers No  IDs of labels associated with the task.
     // * priority       Integer           No  Task priority from 1 (normal) to 4 (urgent).
@@ -369,6 +372,9 @@ const Todoist = (function() {
     }
     if (assignee != null) {
       data.assignee = assignee;
+    }
+    if (description != null) {
+      data.description = description;
     }
     return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/tasks/${id}`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,

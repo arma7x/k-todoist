@@ -25,7 +25,7 @@
     {{^empty}}
       <ul class="kui-list kai-container">
         {{#projects}}
-        <li class="homepageNav" style="border-bottom:1px dashed #320374;"  @click='selected()'>
+        <li class="homepageNav kui-divider" @click='selected()'>
           <div class="kui-row-center">
             <h5 style="font-weight:bold;white-space:pre-wrap!important;word-break:break-word!important;">{{#is_favorite}}&#11088;{{/is_favorite}} {{ name }}</h5>
             <small style="float:right;text-align:right;background-color:{{ color_hex }};width:10px;height:10px;border-radius:50%;"></small>

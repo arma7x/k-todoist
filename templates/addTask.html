@@ -1,19 +1,34 @@
 <div class="kui-flex-wrap">
+  <style>
+    .txtarea {
+      width: 100%;
+      border-radius: 2px;
+      padding: 10px;
+      -moz-box-sizing: border-box;
+      box-sizing: border-box;
+      border: 1px solid #aaaaaa;
+    }
+  </style>
   <ul class="kui-list kai-container">
-    <input id="content" class="addTaskNav kui-input" style="margin:2%;width:96%;" placeholder="Content" value="{{ content }}"/>
-    <li class="addTaskNav" @click="setPriority()" style="border-top:1px dashed #320374;border-bottom:1px dashed #320374;">
+    <li class="kui-divider">
+      <input id="content" class="addTaskNav kui-input" style="margin:2%;width:96%;" placeholder="Content" value="{{ content }}"/>
+    </li>
+    <li class="kui-divider" style="height:114px;">
+      <textarea id="description" name="description" placeholder="Description" class="addTaskNav txtarea" style="height:100px;" type="text">{{ description }}</textarea>
+    </li>
+    <li class="addTaskNav kui-divider" @click="setPriority()">
       <div class="kui-row-center">
         <span>Priority</span>
         <span style="color:#fff;padding:5px;background-color:grey;border-radius:2px;">{{ priority }}</span>
       </div>
     </li>
-    <li class="addTaskNav" @click="setDate()" style="border-bottom:1px dashed #320374;">
+    <li class="addTaskNav kui-divider" @click="setDate()">
       <div class="kui-row-center">
         <span>Due Date</span>
         <span style="color:#fff;padding:5px;background-color:grey;border-radius:2px;">{{ due_date_str }}</span>
       </div>
     </li>
-    <li class="addTaskNav" @click="setTime()" style="border-bottom:1px dashed #320374;">
+    <li class="addTaskNav kui-divider" @click="setTime()">
       <div class="kui-row-center">
         <span>Due Time</span>
         <span style="color:#fff;padding:5px;background-color:grey;border-radius:2px;">{{ due_datetime_str }}</span>

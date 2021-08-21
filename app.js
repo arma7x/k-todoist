@@ -1,6 +1,20 @@
+const APP_VERSION = '1.1.0';
+
 window.addEventListener("load", function() {
 
   localforage.setDriver(localforage.LOCALSTORAGE);
+
+  function isElementInViewport(el, marginTop = 0, marginBottom = 0) {
+    if (!el.getBoundingClientRect)
+      return
+    var rect = el.getBoundingClientRect();
+    return (
+        rect.top >= 0 + marginTop &&
+        rect.left >= 0 &&
+        rect.bottom <= ((window.innerHeight || document.documentElement.clientHeight) - marginBottom) && /* or $(window).height() */
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth) /* or $(window).width() */
+    );
+  }
 
   const CLIENT_ID = "37243c41f091443492812b2782548508";
   const SCOPE = 'task:add,data:read,data:read_write,data:delete,project:delete';
@@ -198,20 +212,32 @@ window.addEventListener("load", function() {
     data: {
       title: 'helpSupportPage'
     },
-    template: `<div style="padding:4px;"><style>.kui-software-key{height:0px}</style>
-      <h5>Premium features are not available(maybe implemented on next update):</h5>
-      <ul>
-        <li>1. Backups</li>
-        <li>2. Archive a project</li>
-        <li>3. Unarchive a project</li>
-        <li>4. Filters</li>
-        <li>5. Label</li>
-        <li>6. User settings</li>
-        <li>7. Templates</li>
-        <li>8. Reminders</li>
-        <li>9. Get all completed items(Task)</li>
-        <li>10. Project Notes(Project Comment)</li>
-        <li>11. Item Notes(Task Comment)</li>
+    template: `<div style="padding:4px;"><style>.kui-software-key{height:0px}#__kai_router__{height:266px!important;}.kui-router-m-bottom{margin-bottom:0px!important;}</style>
+      <h5 style="margin-top:6px;margin-bottom:2px;"># New features:</h5>
+      <ul style="padding: 1px 0 1px 20px;font-size:14px;margin-bottom:2px;">
+        <li style="margin-right:0px;margin-bottom:3px;">Add <b>description</b> field for Task</li>
+        <li style="margin-right:0px;margin-bottom:3px;"><b>Task Viewer</b> support markdown markup(for description field)</li>
+        <li style="margin-right:0px;margin-bottom:3px;"><b>Task Viewer</b> support navigation between anchor tags</li>
+      </ul>
+      <h5 style="margin-top:6px;margin-bottom:2px;"># Task Viewer Shortcut key:</h5>
+      <ul style="padding: 1px 0 1px 20px;font-size:14px;margin-bottom:2px;">
+        <li style="margin-right:0px;margin-bottom:3px;"><b>Arrow Up</b> or <b>Arrow Down</b> to scroll the page</li>
+        <li style="margin-right:0px;margin-bottom:3px;"><b>Arrow Left</b> or <b>Arrow Right</b> to jump between anchor tag</li>
+        <li style="margin-right:0px;margin-bottom:3px;"><b>Enter</b> to select anchor tag</li>
+      </ul>
+      <h5 style="margin-top:6px;margin-bottom:2px;"># List of unavailable Premium features(maybe implemented on next update):</h5>
+      <ul style="padding: 1px 0 1px 20px;font-size:14px;margin-bottom:2px;">
+        <li style="margin-right:0px;margin-bottom:3px;">Backups</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Archive a project</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Unarchive a project</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Filters</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Label</li>
+        <li style="margin-right:0px;margin-bottom:3px;">User settings</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Templates</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Reminders</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Get all completed items(Task)</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Project Notes(Project Comment)</li>
+        <li style="margin-right:0px;margin-bottom:3px;">Item Notes(Task Comment)</li>
       </ul>
     </div>`,
     mounted: function() {
@@ -463,7 +489,11 @@ window.addEventListener("load", function() {
       return j.id === task_id;
     });
     if (idx) {
+      var ANCHORS = [];
+      var PARENT;
+      var _anchorIndex = -1;
       idx.parsed_content = DOMPurify.sanitize(snarkdown(idx.content));
+      idx.parsed_description = DOMPurify.sanitize(snarkdown(idx.description));
       var due = null;
       if (idx.due) {
         var date = new Date(idx.due.date);
@@ -485,14 +515,129 @@ window.addEventListener("load", function() {
           mounted: function() {
             this.$router.setHeaderTitle(`#${idx.id}`);
             navigator.spatialNavigationEnabled = false;
+            const VD = document.getElementById('__viewDefinition__');
+            const len = ANCHORS.length;
+            ANCHORS = [];
+            var done = false, _idx = 0;
+            PARENT = window.getComputedStyle(document.getElementById('__kai_router__'));
+            const _anchors = VD.querySelectorAll('a')
+            for (var x in _anchors) {
+              if (_anchors[x].innerHTML !== "" && _anchors[x].innerHTML != null && _anchors[x].innerText.trim() != "" && _anchors[x].innerText != null) {
+                ANCHORS.push(_anchors[x]);
+                if (!done) {
+                  if (len === 0 && isElementInViewport(_anchors[x], parseFloat(PARENT.marginTop), parseFloat(PARENT.marginBottom))) {
+                    _anchors[x].classList.add('focus');
+                    done = true;
+                    _anchorIndex = _idx;
+                  }
+                }
+                _idx++;
+              }
+            }
+            if (ANCHORS[_anchorIndex])
+              ANCHORS[_anchorIndex].classList.add('focus');
+            this.methods.getVisibleAnchor();
+            console.log(ANCHORS);
           },
           unmounted: function() {},
-          methods: {},
+          methods: {
+            isAnchorInViewPort: function(index) {
+              if (ANCHORS[index] == null)
+                return false;
+              if (isElementInViewport(ANCHORS[index], parseFloat(PARENT.marginTop), parseFloat(PARENT.marginBottom))) {
+                return true;
+              }
+              return false;
+            },
+            getVisibleAnchor: function() {
+              const val = _anchorIndex === -1 ? -1 : 1;
+              if (((_anchorIndex === -1) || (_anchorIndex === ANCHORS.length)) && !this.methods.isAnchorInViewPort(_anchorIndex - val)) {
+                for (var x in ANCHORS) {
+                  if (this.methods.isAnchorInViewPort(x)) {
+                    _anchorIndex = parseInt(x);
+                    break;
+                  }
+                }
+              } else if (this.methods.isAnchorInViewPort(_anchorIndex - val) && !this.methods.isAnchorInViewPort(_anchorIndex)) {
+                if (ANCHORS[_anchorIndex]) {
+                  ANCHORS[_anchorIndex].classList.remove('focus');
+                }
+                ANCHORS[_anchorIndex - val].classList.add('focus');
+                _anchorIndex = _anchorIndex - val;
+              }
+              this.methods.renderCenterText();
+            },
+            renderCenterText: function() {
+              if (ANCHORS[_anchorIndex]) {
+                this.$router.setSoftKeyCenterText("GOTO");
+              } else {
+                this.$router.setSoftKeyCenterText("");
+              }
+            }
+          },
           softKeyText: { left: '', center: '', right: '' },
           softKeyListener: {
             left: function() {},
-            center: function() {},
+            center: function() {
+              if (ANCHORS[_anchorIndex]) {
+                window.open(ANCHORS[_anchorIndex].href);
+              }
+            },
             right: function() {}
+          },
+          dPadNavListener: {
+            arrowUp: function() {
+              const DOM = document.getElementById(this.id);
+              DOM.scrollTop -= 20;
+              this.scrollThreshold = DOM.scrollTop;
+              if (ANCHORS[_anchorIndex]) {
+                ANCHORS[_anchorIndex].classList.remove('focus');
+                while (!this.methods.isAnchorInViewPort(_anchorIndex))  {
+                  _anchorIndex -= 1;
+                  if (ANCHORS[_anchorIndex] == null)
+                    break
+                }
+              }
+              if (ANCHORS[_anchorIndex])
+                ANCHORS[_anchorIndex].classList.add('focus');
+              this.methods.getVisibleAnchor();
+            },
+            arrowRight: function() {
+              if (ANCHORS[_anchorIndex + 1] == null)
+                return
+              if (this.methods.isAnchorInViewPort(_anchorIndex + 1)) {
+                ANCHORS[_anchorIndex].classList.remove('focus');
+                ANCHORS[_anchorIndex + 1].classList.add('focus');
+                _anchorIndex += 1;
+              }
+              this.methods.renderCenterText();
+            },
+            arrowDown: function() {
+              const DOM = document.getElementById(this.id);
+              DOM.scrollTop += 20;
+              this.scrollThreshold = DOM.scrollTop;
+              if (ANCHORS[_anchorIndex]) {
+                ANCHORS[_anchorIndex].classList.remove('focus');
+                while (!this.methods.isAnchorInViewPort(_anchorIndex))  {
+                  _anchorIndex += 1;
+                  if (ANCHORS[_anchorIndex] == null)
+                    break
+                }
+              }
+              if (ANCHORS[_anchorIndex])
+                ANCHORS[_anchorIndex].classList.add('focus');
+              this.methods.getVisibleAnchor();
+            },
+            arrowLeft: function() {
+              if (ANCHORS[_anchorIndex - 1] == null)
+                return
+              if (this.methods.isAnchorInViewPort(_anchorIndex - 1)) {
+                ANCHORS[_anchorIndex].classList.remove('focus');
+                ANCHORS[_anchorIndex - 1].classList.add('focus');
+                _anchorIndex -= 1;
+              }
+              this.methods.renderCenterText();
+            },
           }
         })
       );
@@ -501,13 +646,14 @@ window.addEventListener("load", function() {
     }
   }
 
-  const addTaskPage = function($router, content=null, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null) {
+  const addTaskPage = function($router, content=null, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null, description=null) {
     
     $router.push(
       new Kai({
         name: 'addProjectPage',
         data: {
           content: content || '',
+          description: description || '',
           priority: priority || 1,
           due_date_str: due_date ? ymd(due_date) : 'No',
           due_date: due_date || null,
@@ -517,7 +663,7 @@ window.addEventListener("load", function() {
         verticalNavClass: '.addTaskNav',
         templateUrl: document.location.origin + '/templates/addTask.html',
         mounted: function() {
-          this.$router.setHeaderTitle(content ? 'Update Project' : 'Add Project');
+          this.$router.setHeaderTitle(content ? 'Update Task' : 'Add Task');
           navigator.spatialNavigationEnabled = false;
         },
         unmounted: function() {},
@@ -598,9 +744,9 @@ window.addEventListener("load", function() {
               this.$router.showLoading();
               var req;
               if (content) {
-                req = window['TODOIST_API'].updateTask(project_id, this.data.content, label_ids, this.data.priority, due_string, date, datetime, due_lang, assignee);
+                req = window['TODOIST_API'].updateTask(project_id, this.data.content, label_ids, this.data.priority, due_string, date, datetime, due_lang, assignee, this.data.description);
               } else {
-                req = window['TODOIST_API'].createTask(this.data.content, project_id, section_id, parent_id, order, label_ids, this.data.priority, due_string, date, datetime, due_lang, assignee);
+                req = window['TODOIST_API'].createTask(this.data.content, project_id, section_id, parent_id, order, label_ids, this.data.priority, due_string, date, datetime, due_lang, assignee, this.data.description);
               }
               req.then(() => {
                 this.$router.showToast('Success');
@@ -624,7 +770,7 @@ window.addEventListener("load", function() {
         softKeyInputFocusText: { left: 'Done', center: '', right: '' },
         softKeyInputFocusListener: {
           left: function() {
-            if (document.activeElement.tagName === 'INPUT') {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
               document.activeElement.blur();
               this.dPadNavListener.arrowDown();
             }
@@ -636,6 +782,7 @@ window.addEventListener("load", function() {
           arrowUp: function() {
             this.navigateListNav(-1);
             this.data.content = document.getElementById('content').value;
+            this.data.description = document.getElementById('description').value;
           },
           arrowRight: function() {
             // this.navigateTabNav(-1);
@@ -643,6 +790,7 @@ window.addEventListener("load", function() {
           arrowDown: function() {
             this.navigateListNav(1);
             this.data.content = document.getElementById('content').value;
+            this.data.description = document.getElementById('description').value;
           },
           arrowLeft: function() {
             // this.navigateTabNav(1);
@@ -748,6 +896,11 @@ window.addEventListener("load", function() {
           },
           toggleSoftKeyText: function(idx) {
             setTimeout(() => {
+              const page = this.$router.stack[this.$router.stack.length - 1];
+              if (page) {
+                if (page.name != 'tasksPage')
+                  return;
+              }
               if (this.data.tasks[idx]) {
                 this.$router.setSoftKeyText('Add', 'VIEW', 'More');
               } else {
@@ -792,51 +945,55 @@ window.addEventListener("load", function() {
                         datetime = new Date(task.due.date);
                       }
                     }
-                    addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null);
+                    addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null, task.description);
                   } else if (selected.text === 'Delete Task') {
-                    this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {
-                      this.$router.showLoading();
-                      window['TODOIST_API'].deleteTask(task.id)
-                      .then(() => {
-                        this.$router.showToast('Success');
-                      })
-                      .catch((e) => {
-                        var msg;
-                        if (e.response) {
-                          msg = e.response.toString();
-                        } else {
-                          msg = e.toString();
-                        }
-                        this.$router.showToast(msg);
-                      })
-                      .finally(() => {
-                        this.$router.hideLoading();
+                    setTimeout(() => {
+                      this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {
+                        this.$router.showLoading();
+                        window['TODOIST_API'].deleteTask(task.id)
+                        .then(() => {
+                          this.$router.showToast('Success');
+                        })
+                        .catch((e) => {
+                          var msg;
+                          if (e.response) {
+                            msg = e.response.toString();
+                          } else {
+                            msg = e.toString();
+                          }
+                          this.$router.showToast(msg);
+                        })
+                        .finally(() => {
+                          this.$router.hideLoading();
+                        });
+                      }, 'No', () => {}, '', () => {}, () => {
+                        this.methods.toggleSoftKeyText(this.verticalNavIndex);
                       });
-                    }, 'No', () => {}, '', () => {}, () => {
-                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
-                    });
+                    }, 100);
                   } else if (selected.text === 'Task Completed') {
-                    this.$router.showDialog('Confirm', 'Are you sure task #' + task.id + '  was completed ?', null, 'Yes', () => {
-                      this.$router.showLoading();
-                      window['TODOIST_API'].deleteTask(task.id)
-                      .then(() => {
-                        this.$router.showToast('Success');
-                      })
-                      .catch((e) => {
-                        var msg;
-                        if (e.response) {
-                          msg = e.response.toString();
-                        } else {
-                          msg = e.toString();
-                        }
-                        this.$router.showToast(msg);
-                      })
-                      .finally(() => {
-                        this.$router.hideLoading();
+                    setTimeout(() => {
+                      this.$router.showDialog('Confirm', 'Are you sure task #' + task.id + '  was completed ?', null, 'Yes', () => {
+                        this.$router.showLoading();
+                        window['TODOIST_API'].deleteTask(task.id)
+                        .then(() => {
+                          this.$router.showToast('Success');
+                        })
+                        .catch((e) => {
+                          var msg;
+                          if (e.response) {
+                            msg = e.response.toString();
+                          } else {
+                            msg = e.toString();
+                          }
+                          this.$router.showToast(msg);
+                        })
+                        .finally(() => {
+                          this.$router.hideLoading();
+                        });
+                      }, 'No', () => {}, '', () => {}, () => {
+                        this.methods.toggleSoftKeyText(this.verticalNavIndex);
                       });
-                    }, 'No', () => {}, '', () => {}, () => {
-                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
-                    });
+                    }, 100);
                   } else {
                     // console.log(selected, task);
                   }
@@ -951,7 +1108,7 @@ window.addEventListener("load", function() {
                         datetime = new Date(task.due.date);
                       }
                     }
-                    addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null);
+                    addTaskPage($router, task.content, task.id, null, null, null, [], task.priority, null, date, datetime, null, null, task.description);
                   } else if (selected.text === 'Delete Task') {
                     this.$router.showDialog('Confirm', 'Are you sure to delete task #' + task.id + ' ?', null, 'Yes', () => {
                       this.$router.showLoading();
@@ -1041,7 +1198,7 @@ window.addEventListener("load", function() {
 
     $router.push(
       new Kai({
-        name: 'sectionsPagee',
+        name: 'sectionsPage',
         data: {
           title: 'sectionsPage',
           sections: [],
@@ -1087,6 +1244,11 @@ window.addEventListener("load", function() {
           },
           toggleSoftKeyText: function(idx) {
             setTimeout(() => {
+              const page = this.$router.stack[this.$router.stack.length - 1];
+              if (page) {
+                if (page.name != 'sectionsPage')
+                  return;
+              }
               if (this.data.sections[idx]) {
                 this.$router.setSoftKeyText('Add', 'OPEN', 'More');
               } else {
@@ -1119,27 +1281,29 @@ window.addEventListener("load", function() {
                   if (selected.text === 'Edit Section') {
                     addSectionPage($router, section.id, section.name);
                   } else if (selected.text === 'Delete Section') {
-                    this.$router.showDialog('Confirm', 'Are you sure to delete ' + section.name + ' ?', null, 'Yes', () => {
-                      this.$router.showLoading();
-                      window['TODOIST_API'].deleteSection(section.id)
-                      .then(() => {
-                        this.$router.showToast('Success');
-                      })
-                      .catch((e) => {
-                        var msg;
-                        if (e.response) {
-                          msg = e.response.toString();
-                        } else {
-                          msg = e.toString();
-                        }
-                        this.$router.showToast(msg);
-                      })
-                      .finally(() => {
-                        this.$router.hideLoading();
+                    setTimeout(() => {
+                      this.$router.showDialog('Confirm', 'Are you sure to delete ' + section.name + ' ?', null, 'Yes', () => {
+                        this.$router.showLoading();
+                        window['TODOIST_API'].deleteSection(section.id)
+                        .then(() => {
+                          this.$router.showToast('Success');
+                        })
+                        .catch((e) => {
+                          var msg;
+                          if (e.response) {
+                            msg = e.response.toString();
+                          } else {
+                            msg = e.toString();
+                          }
+                          this.$router.showToast(msg);
+                        })
+                        .finally(() => {
+                          this.$router.hideLoading();
+                        });
+                      }, 'No', () => {}, '', () => {}, () => {
+                        this.methods.toggleSoftKeyText(this.verticalNavIndex);
                       });
-                    }, 'No', () => {}, '', () => {}, () => {
-                      this.methods.toggleSoftKeyText(this.verticalNavIndex);
-                    });
+                    }, 100);
                   }
                 }, 101);
               }, () => {
@@ -1213,6 +1377,7 @@ window.addEventListener("load", function() {
                 }
                 req.then(() => {
                   this.$router.showToast('Success');
+                  document.activeElement.blur();
                   this.$router.pop();
                 })
                 .catch((e) => {
@@ -1266,28 +1431,37 @@ window.addEventListener("load", function() {
     mounted: function() {
       navigator.spatialNavigationEnabled = false;
       this.$router.setHeaderTitle('K-Todoist');
-      this.$state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
-      navigator.spatialNavigationEnabled = false;
-      localforage.getItem('TODOIST_ACCESS_TOKEN')
-      .then((TODOIST_ACCESS_TOKEN) => {
-        if (TODOIST_ACCESS_TOKEN != null) {
-          this.setData({ TODOIST_ACCESS_TOKEN: TODOIST_ACCESS_TOKEN });
-          if (window['TODOIST_API'] == null) {
-            window['TODOIST_API'] = new Todoist(TODOIST_ACCESS_TOKEN, onCompleteSync);
-            window['TODOIST_API'].sync()
-            .then(() => {
-              initTodoistWebsocket();
-            });
-          }
-          localforage.getItem('TODOIST_SYNC')
-          .then((TODOIST_SYNC) => {
-            if (TODOIST_SYNC != null) {
-              this.$state.setState('TODOIST_SYNC', TODOIST_SYNC);
-              this.methods.listenStateSync(TODOIST_SYNC);
-            }
-          })
+      localforage.getItem('APP_VERSION')
+      .then((v) => {
+        if (v == null || v != APP_VERSION) {
+          this.$router.showToast('Read about new updates');
+          this.$router.push('helpSupportPage');
+          localforage.setItem('APP_VERSION', APP_VERSION)
         } else {
-          this.$router.setSoftKeyText('Menu', '', '');
+          this.$state.addStateListener('TODOIST_SYNC', this.methods.listenStateSync);
+          navigator.spatialNavigationEnabled = false;
+          localforage.getItem('TODOIST_ACCESS_TOKEN')
+          .then((TODOIST_ACCESS_TOKEN) => {
+            if (TODOIST_ACCESS_TOKEN != null) {
+              this.setData({ TODOIST_ACCESS_TOKEN: TODOIST_ACCESS_TOKEN });
+              if (window['TODOIST_API'] == null) {
+                window['TODOIST_API'] = new Todoist(TODOIST_ACCESS_TOKEN, onCompleteSync);
+                window['TODOIST_API'].sync()
+                .then(() => {
+                  initTodoistWebsocket();
+                });
+              }
+              localforage.getItem('TODOIST_SYNC')
+              .then((TODOIST_SYNC) => {
+                if (TODOIST_SYNC != null) {
+                  this.$state.setState('TODOIST_SYNC', TODOIST_SYNC);
+                  this.methods.listenStateSync(TODOIST_SYNC);
+                }
+              })
+            } else {
+              this.$router.setSoftKeyText('Menu', '', '');
+            }
+          });
         }
       });
     },
@@ -1356,6 +1530,9 @@ window.addEventListener("load", function() {
             { "text": "Kill App" }
           ];
           if (res) {
+            try {
+              title = this.$state.getState('TODOIST_SYNC').user.email;
+            } catch (e){}
             menu = [
               { "text": "Help & Support" },
               { "text": "Sync" },
@@ -1530,9 +1707,14 @@ window.addEventListener("load", function() {
       onerror: err => console.error(err),
       onready: ad => {
         ad.call('display')
-        setTimeout(() => {
+        ad.on('close', () => {
+          app.$router.hideBottomSheet();
           document.body.style.position = '';
-        }, 1000);
+        });
+        ad.on('display', () => {
+          app.$router.hideBottomSheet();
+          document.body.style.position = '';
+        });
       }
     })
   }

@@ -896,7 +896,7 @@ window.addEventListener("load", function() {
           },
           toggleSoftKeyText: function(idx) {
             setTimeout(() => {
-              const page = this.$router.stack[this.$router.stack.length - 1];
+              const page = $router.stack[$router.stack.length - 1];
               if (page) {
                 if (page.name != 'tasksPage')
                   return;
@@ -1071,6 +1071,11 @@ window.addEventListener("load", function() {
           },
           toggleSoftKeyText: function(idx) {
             setTimeout(() => {
+              const page = $router.stack[$router.stack.length - 1];
+              if (page) {
+                if (page.name != 'todayTasksPage')
+                  return;
+              }
               if (this.data.tasks[idx]) {
                 this.$router.setSoftKeyText('', 'VIEW', 'More');
               } else {
@@ -1252,7 +1257,7 @@ window.addEventListener("load", function() {
           },
           toggleSoftKeyText: function(idx) {
             setTimeout(() => {
-              const page = this.$router.stack[this.$router.stack.length - 1];
+              const page = $router.stack[$router.stack.length - 1];
               if (page) {
                 if (page.name != 'sectionsPage')
                   return;
@@ -1508,6 +1513,11 @@ window.addEventListener("load", function() {
       },
       toggleSoftKeyText: function() {
         setTimeout(() => {
+          const page = this.$router.stack[this.$router.stack.length - 1];
+          if (page) {
+            if (page.name != 'homepage')
+              return;
+          }
           if (!this.$router.bottomSheet) {
             if (this.data.projects.length > 0) {
               this.$router.setSoftKeyText('Menu', '', 'More');

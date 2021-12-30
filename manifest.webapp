@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.1.2",
   "name": "K-Todoist",
   "description": "K-Todoist is a unoffical Todoist client for KaiOS",
   "launch_path": "/index.html",
@@ -16,7 +16,7 @@
   "cursor": false,
   "developer": {
     "name": "arma7x",
-    "url": "https://github.com/arma7x"
+    "url": "https://www.kaiostech.com"
   },
   "origin": "app://k-todoist.arma7x.com",
   "type": "privileged",

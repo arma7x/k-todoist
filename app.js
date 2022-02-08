@@ -76,7 +76,7 @@ window.addEventListener("load", function() {
     localforage.setItem('TODOIST_SYNC', data)
     .then((TODOIST_SYNC) => {
       state.setState('TODOIST_SYNC', TODOIST_SYNC);
-      // console.log('onCompleteSync');
+      // console.log('onCompleteSync', TODOIST_SYNC['projects']);
     })
   }
 
@@ -684,12 +684,12 @@ window.addEventListener("load", function() {
           },
           setDate: function() {
             var y,m,d;
-            var date = new Date(this.data.due_date);
-            if (this.data.due_date) {
+            var date = this.data.due_date ? new Date(this.data.due_date) : new Date();
+            //if (this.data.due_date) {
               y = date.getFullYear();
               m = date.getMonth() + 1;
               d = date.getDate();
-            }
+            //}
             this.$router.showDatePicker(y, m, d, (dt) => {
               setTimeout(() => {
                 this.setData({ due_date_str: ymd(dt), due_date: dt });
@@ -700,11 +700,11 @@ window.addEventListener("load", function() {
           },
           setTime: function() {
             var HH,MM;
-            var date = new Date(this.data.due_datetime);
-            if (this.data.due_datetime) {
+            var date = this.data.due_datetime ? new Date(this.data.due_datetime) : new Date();
+            //if (this.data.due_datetime) {
               HH = date.getHours();
               MM = date.getMinutes();
-            }
+            //}
             this.$router.showTimePicker(HH, MM, null, (dt) => {
               setTimeout(() => {
                 this.setData({ due_datetime_str: dt.toLocaleTimeString(), due_datetime: dt });
@@ -737,7 +737,8 @@ window.addEventListener("load", function() {
               dt.setDate(d.getDate());
               dt.setMonth(d.getMonth());
               dt.setFullYear(d.getFullYear());
-              datetime = dt.toISOString();
+              dt.setMilliseconds(0);
+              datetime = dt.toISOString().replace('.000Z', 'Z');
             }
             // console.log(this.data.content, project_id, section_id, parent_id, order, label_ids, this.data.priority, due_string, date, datetime, due_lang, assignee);
             if (window['TODOIST_API']) {
@@ -1499,10 +1500,12 @@ window.addEventListener("load", function() {
             projects.push(i);
           }
         });
-        if (projects.length > 0) {
-          this.$router.setSoftKeyText('Menu', '', 'More');
-        } else {
-          this.$router.setSoftKeyText('Menu', '', '');
+        if (!this.$router.bottomSheet) {
+          if (projects.length > 0) {
+            this.$router.setSoftKeyText('Menu', 'Add Task', 'More');
+          } else {
+            this.$router.setSoftKeyText('Menu', 'Add Task', '');
+          }
         }
         if ((projects.length - 1) < this.verticalNavIndex) {
           this.verticalNavIndex--;
@@ -1520,9 +1523,9 @@ window.addEventListener("load", function() {
           }
           if (!this.$router.bottomSheet) {
             if (this.data.projects.length > 0) {
-              this.$router.setSoftKeyText('Menu', '', 'More');
+              this.$router.setSoftKeyText('Menu', 'Add Task', 'More');
             } else {
-              this.$router.setSoftKeyText('Menu', '', '');
+              this.$router.setSoftKeyText('Menu', 'Add Task', '');
             }
           }
         }, 100);
@@ -1536,7 +1539,7 @@ window.addEventListener("load", function() {
         }
       }
     },
-    softKeyText: { left: 'Menu', center: '', right: '' },
+    softKeyText: { left: 'Menu', center: 'Add Task', right: '' },
     softKeyListener: {
       left: function() {
         localforage.getItem('TODOIST_ACCESS_TOKEN')
@@ -1593,10 +1596,15 @@ window.addEventListener("load", function() {
         });
       },
       center: function() {
-        //if (this.verticalNavIndex > -1) {
-        //  const nav = document.querySelectorAll(this.verticalNavClass);
-        //  nav[this.verticalNavIndex].click();
-        //}
+        const obj = this.$state.getState('TODOIST_SYNC');
+        if (obj['projects'] == null)
+          return;
+        const idx  = obj['projects'].findIndex((project) => {
+          return project['inbox_project'];
+        });
+        if (idx === -1)
+          return;
+        addTaskPage(this.$router, null, obj['projects'][idx].id);
       },
       right: function() {
         var proj = this.data.projects[this.verticalNavIndex];

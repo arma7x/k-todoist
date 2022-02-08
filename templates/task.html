@@ -2,7 +2,7 @@
   <style scoped>a{text-decoration:none!important;box-sizing:border-box!important;padding:0px 2px}a.focus{color:white!important;box-sizing:border-box!important;color:#002B80!important;background-color:rgba(129,169,248,0.34)!important;padding:0px 1px;border:0.1px solid #002B80;border-radius:3px;}</style>
   <div style="padding:4px;">
     <div style="margin-bottom:8px;">
-      <h5><span style="color:#320374;text-decoration:underline;">Priority:</span> {{ task.priority }}</h5>
+      <h5><span style="color:#320374;">Priority:</span> {{ task.priority }}</h5>
     </div>
     {{#task.due}}
     <div style="margin-bottom:8px;">
@@ -11,11 +11,11 @@
     </div>
     {{/task.due}}
     <div style="margin-bottom:8px;">
-      <h5 style="color:#320374;text-decoration:underline;">Task Name:</h5>
+      <h5 style="color:#320374;">Task Name:</h5>
       {{{ task.parsed_content }}}
     </div>
     <div>
-      <h5 style="color:#320374;text-decoration:underline;">Task Description:</h5>
+      <h5 style="color:#320374;">Task Description:</h5>
       <div style="font-size:80%;margin-top:4px;">
         {{{ task.parsed_description }}}
       </div>

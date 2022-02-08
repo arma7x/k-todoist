@@ -343,7 +343,9 @@ window.addEventListener("load", function() {
         sk.classList.remove("sr-only");
         const kr = document.getElementById('__kai_router__');
         kr.classList.remove("full-screen-browser");
-        navigator.spatialNavigationEnabled = false;
+        setTimeout(() => {
+          navigator.spatialNavigationEnabled = false;
+        }, 100);
       },
       methods: {
         listenState: function() {}

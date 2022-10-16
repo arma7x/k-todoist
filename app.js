@@ -256,7 +256,7 @@ window.addEventListener("load", function() {
 
   const loginPage = function($router) {
     var ping = new XMLHttpRequest({ mozSystem: true });
-    ping.open('GET', 'https://malaysiaapi.herokuapp.com/', true);
+    ping.open('GET', 'https://malaysiaapi-arma7x.koyeb.app/', true);
     ping.send();
 
     var salt = window.crypto.getRandomValues(new Uint32Array(10))[0].toString();
@@ -296,14 +296,14 @@ window.addEventListener("load", function() {
         var shadow = document.createElement('shadow');
         root2.appendChild(shadow);
         loginTab.iframe.addEventListener('mozbrowserlocationchange', function (e) {
-          if (e.detail.url.indexOf('https://malaysiaapi.herokuapp.com/todoist/api/v1/redirect') > -1) {
+          if (e.detail.url.indexOf('https://malaysiaapi-arma7x.koyeb.app/todoist/api/v1/redirect') > -1) {
             // console.log(window['loginTab'].url.url);
             const codeToken = getURLParam('code', window['loginTab'].url.url);
             const stateToken = getURLParam('state', window['loginTab'].url.url);
             if (codeToken.length > 0 && stateToken.length > 0) {
               setTimeout(() => {
                 var oauthAuthorize = new XMLHttpRequest({ mozSystem: true });
-                oauthAuthorize.open('GET', 'https://malaysiaapi.herokuapp.com/todoist/api/v1/exchange_token?code=' + codeToken[0], true);
+                oauthAuthorize.open('GET', 'https://malaysiaapi-arma7x.koyeb.app/todoist/api/v1/exchange_token?code=' + codeToken[0], true);
                 oauthAuthorize.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
                 oauthAuthorize.setRequestHeader("X-Accept", 'application/json');
                 oauthAuthorize.onreadystatechange = function() {
@@ -649,7 +649,7 @@ window.addEventListener("load", function() {
   }
 
   const addTaskPage = function($router, content=null, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null, description=null) {
-    
+
     $router.push(
       new Kai({
         name: 'addProjectPage',
@@ -1759,7 +1759,7 @@ window.addEventListener("load", function() {
     if (document.activeElement.tagName === 'IFRAME') {
       document.activeElement.blur();
     }
-    
+
     if (document.visibilityState === 'hidden') {
       if (IFRAME_TIMER) {
         clearInterval(IFRAME_TIMER);

@@ -12,26 +12,26 @@ const Todoist = (function() {
   }
 
   Todoist.Colors = {
-    30: ['Berry Red', '#b8255f'],
-    31: ['Red', '#db4035'],
-    32: ['Orange', '#ff9933'],
-    33: ['Yellow', '#fad000'],
-    34: ['Olive Green', '#afb83b'],
-    36: ['Green', '#299438'],
-    37: ['Mint Green', '#6accbc'],
-    38: ['Teal', '#158fad'],
-    39: ['Sky Blue', '#14aaf5'],
-    40: ['Light Blue', '#96c3eb'],
-    41: ['Blue', '#4073ff'],
-    42: ['Grape', '#884dff'],
-    43: ['Violet', '#af38eb'],
-    44: ['Lavender', '#eb96eb'],
-    35: ['Lime Green', '#7ecc49'],
-    45: ['Magenta', '#e05194'],
-    46: ['Salmon', '#ff8d85'],
-    47: ['Charcoal', '#808080'],
-    48: ['Grey', '#b8b8b8'],
-    49: ['Taupe', '#ccac93']
+    'berry_red': ['Berry Red', '#b8255f'],
+    'red': ['Red', '#db4035'],
+    'orange': ['Orange', '#ff9933'],
+    'yellow': ['Yellow', '#fad000'],
+    'olive_green': ['Olive Green', '#afb83b'],
+    'lime_green': ['Lime Green', '#7ecc49'],
+    'green': ['Green', '#299438'],
+    'mint_green': ['Mint Green', '#6accbc'],
+    'teal': ['Teal', '#158fad'],
+    'sky_blue': ['Sky Blue', '#14aaf5'],
+    'light_blue': ['Light Blue', '#96c3eb'],
+    'blue': ['Blue', '#4073ff'],
+    'grape': ['Grape', '#884dff'],
+    'violet': ['Violet', '#af38eb'],
+    'lavender': ['Lavender', '#eb96eb'],
+    'magenta': ['Magenta', '#e05194'],
+    'salmon': ['Salmon', '#ff8d85'],
+    'charcoal': ['Charcoal', '#808080'],
+    'grey': ['Grey', '#b8b8b8'],
+    'taupe': ['Taupe', '#ccac93']
   }
 
   Todoist.uuidv4 = function() {
@@ -80,7 +80,7 @@ const Todoist = (function() {
     });
   }
 
-  // GET https://api.todoist.com/sync/v8/sync
+  // GET https://api.todoist.com/sync/v9/sync
   Todoist.prototype.sync = function(sync_token) {
     function deepCopy(_res, _syncData, type) {
       var new_ids = [];
@@ -102,7 +102,7 @@ const Todoist = (function() {
       sync_token: sync_token || this.syncData.sync_token || '*',
       resource_types: '["all"]'
     };
-    var result = Todoist.xhr('GET', `https://api.todoist.com/sync/v8/sync`, data, query, {});
+    var result = Todoist.xhr('GET', `https://api.todoist.com/sync/v9/sync`, data, query, {'Authorization': `${this.tokenType} ${this.accessToken}`});
     result.then((res) => {
       ['projects', 'items', 'notes', 'project_notes', 'sections', 'labels', 'filters'].forEach((i) => {
         deepCopy(res, this.syncData, i);
@@ -114,12 +114,12 @@ const Todoist = (function() {
     return result;
   }
 
-  // GET https://api.todoist.com/rest/v1/projects
+  // GET https://api.todoist.com/rest/v2/projects
   Todoist.prototype.getAllProject = function() {
-    return Todoist.xhr('GET', 'https://api.todoist.com/rest/v1/projects', {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', 'https://api.todoist.com/rest/v2/projects', {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/projects
+  // POST https://api.todoist.com/rest/v2/projects
   Todoist.prototype.createProject = function(name, parent_id, color, favorite) {
     // * name      String  Yes Name of the project.
     // * parent_id Integer No Parent project ID.
@@ -140,19 +140,19 @@ const Todoist = (function() {
     if (favorite != null && typeof favorite === "boolean") {
       data.favorite = favorite;
     }
-    return Todoist.xhr('POST', 'https://api.todoist.com/rest/v1/projects', data, {}, {
+    return Todoist.xhr('POST', 'https://api.todoist.com/rest/v2/projects', data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // GET https://api.todoist.com/rest/v1/projects/${id}
+  // GET https://api.todoist.com/rest/v2/projects/${id}
   Todoist.prototype.getProject = function(id) {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/projects/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/projects/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/projects/${id}
+  // POST https://api.todoist.com/rest/v2/projects/${id}
   Todoist.prototype.updateProject = function(id, name, color, favorite) {
     // name String No	Name of the project.
     // color Integer No	A numeric ID representing the color of the project icon. Refer to the id column in the Colors guide for more info.
@@ -167,29 +167,29 @@ const Todoist = (function() {
     if (favorite != null && typeof favorite === "boolean") {
       data.favorite = favorite;
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/projects/${id}`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/projects/${id}`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // DELETE https://api.todoist.com/rest/v1/projects/${id}
+  // DELETE https://api.todoist.com/rest/v2/projects/${id}
   Todoist.prototype.deleteProject = function(id) {
-    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v1/projects/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v2/projects/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // GET https://api.todoist.com/rest/v1/projects/${id}/collaborators
+  // GET https://api.todoist.com/rest/v2/projects/${id}/collaborators
   Todoist.prototype.getAllCollaborators = function(id) {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/projects/${id}/collaborators`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/projects/${id}/collaborators`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // GET https://api.todoist.com/rest/v1/sections?project_id=${id}
+  // GET https://api.todoist.com/rest/v2/sections?project_id=${id}
   Todoist.prototype.getAllSections = function(id) {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/sections`, {}, {'project_id': id}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/sections`, {}, {'project_id': id}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/sections
+  // POST https://api.todoist.com/rest/v2/sections
   Todoist.prototype.createSection = function(project_id, name, order) {
     // name String Yes	Section name
     // project_id Integer Yes	Project ID this section should belong to
@@ -208,18 +208,18 @@ const Todoist = (function() {
     if (order != null) {
       data.order = order;
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/sections`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/sections`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json'
     });
   }
 
-  // GET https://api.todoist.com/rest/v1/sections/7025
+  // GET https://api.todoist.com/rest/v2/sections/7025
   Todoist.prototype.getSection = function(id) {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/sections/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/sections/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/sections/7025
+  // POST https://api.todoist.com/rest/v2/sections/7025
   Todoist.prototype.updateSection = function(id, name) {
     // name String Yes	Section name
     var data = {};
@@ -228,18 +228,18 @@ const Todoist = (function() {
     } else {
       return Promise.reject('Name is require');
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/sections/${id}`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/sections/${id}`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json'
     });
   }
 
-  // DELETE https://api.todoist.com/rest/v1/sections/7025
+  // DELETE https://api.todoist.com/rest/v2/sections/7025
   Todoist.prototype.deleteSection = function(id) {
-    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v1/sections/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v2/sections/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // GET https://api.todoist.com/rest/v1/tasks
+  // GET https://api.todoist.com/rest/v2/tasks
   Todoist.prototype.getAllActiveTask = function(filter = {}) {
     // * project_id Integer           No	Filter tasks by project ID.
     // * label_id   Integer           No	Filter tasks by label.
@@ -262,10 +262,10 @@ const Todoist = (function() {
     if (filter.ids != null) {
       query.ids = filter.ids;
     }
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/tasks`, {}, query, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/tasks`, {}, query, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/tasks
+  // POST https://api.todoist.com/rest/v2/tasks
   Todoist.prototype.createTask = function(content, project_id=null, section_id=null, parent_id=null, order=null, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null, description = null) {
     // * content      String            Yes Task content. This value may contain markdown-formatted text and hyperlinks. Details on markdown support can be found in the Text Formatting article in the Help Center.
     // * project_id   Integer           No  Task project ID. If not set, task is put to user's Inbox.
@@ -321,19 +321,19 @@ const Todoist = (function() {
     if (description != null) {
       data.description = description;
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/tasks`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/tasks`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // GET https://api.todoist.com/rest/v1/tasks/2995104339
+  // GET https://api.todoist.com/rest/v2/tasks/2995104339
   Todoist.prototype.getActiveTask = function(id) {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/tasks/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/tasks/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/tasks/2995104339
+  // POST https://api.todoist.com/rest/v2/tasks/2995104339
   Todoist.prototype.updateTask = function(id, content, label_ids=[], priority=null, due_string=null, due_date=null, due_datetime=null, due_lang=null, assignee=null, description = null) { // TODO
     // * content        String            Yes Task content. This value may contain markdown-formatted text and hyperlinks. Details on markdown support can be found in the Text Formatting article in the Help Center.
     // * label_ids      Array of Integers No  IDs of labels associated with the task.
@@ -376,39 +376,39 @@ const Todoist = (function() {
     if (description != null) {
       data.description = description;
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/tasks/${id}`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/tasks/${id}`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // POST https://api.todoist.com/rest/v1/tasks/2995104339/close
+  // POST https://api.todoist.com/rest/v2/tasks/2995104339/close
   Todoist.prototype.closeTask = function(id) {
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/tasks/${id}/close`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/tasks/${id}/close`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/tasks/2995104339/reopen
+  // POST https://api.todoist.com/rest/v2/tasks/2995104339/reopen
   Todoist.prototype.reopenTask = function(id) {
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/tasks/${id}/reopen`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/tasks/${id}/reopen`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // DELETE https://api.todoist.com/rest/v1/tasks/2995104339
+  // DELETE https://api.todoist.com/rest/v2/tasks/2995104339
   Todoist.prototype.deleteTask = function(id) {
-    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v1/tasks/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v2/tasks/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/sync/v8/completed/get_all?project_id=2261572164
+  // POST https://api.todoist.com/sync/v9/completed/get_all?project_id=2261572164
   Todoist.prototype.getCompletedTasks = function(id) {
     var data = {};
     var query = {token: this.accessToken};
     if (id != null) {
       query.project_id = id
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/sync/v8/completed/get_all`, data, query, {});
+    return Todoist.xhr('POST', `https://api.todoist.com/sync/v9/completed/get_all`, data, query, {});
   }
 
-  // GET https://api.todoist.com/rest/v1/comments?task_id=2995104339
+  // GET https://api.todoist.com/rest/v2/comments?task_id=2995104339
   Todoist.prototype.getAllComments = function(project_id, task_id) {
     var query = {};
     if (project_id != null) {
@@ -418,10 +418,10 @@ const Todoist = (function() {
     } else {
       return Promise.reject('Task/Project ID is require');
     }
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/comments`, {}, query, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/comments`, {}, query, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/comments
+  // POST https://api.todoist.com/rest/v2/comments
   Todoist.prototype.createComment = function(project_id, task_id, content, attachment) {
     // * task_id    Integer Yes (or project_id) Comment's task ID (for task comments).
     // * project_id Integer Yes (or task_id)    Comment's project ID (for project comments).
@@ -443,19 +443,19 @@ const Todoist = (function() {
     if (attachment != null) {
       // data.attachment = attachment; // TODO
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/comments`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/comments`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // GET https://api.todoist.com/rest/v1/comments/2992679862
+  // GET https://api.todoist.com/rest/v2/comments/2992679862
   Todoist.prototype.getComment = function(id) {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/comments/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/comments/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/comments/2992679862
+  // POST https://api.todoist.com/rest/v2/comments/2992679862
   Todoist.prototype.updateComment = function(id, content) {
     // content String Yes New content for the comment. This value may contain markdown-formatted text and hyperlinks. Details on markdown support can be found in the Text Formatting article in the Help Center.
     var data = {};
@@ -464,24 +464,24 @@ const Todoist = (function() {
     } else {
       return Promise.reject('Content is require');
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/comments/${id}`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/comments/${id}`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // DELETE https://api.todoist.com/rest/v1/comments/2992679862
+  // DELETE https://api.todoist.com/rest/v2/comments/2992679862
   Todoist.prototype.deleteComment = function(id) {
-    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v1/comments/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v2/comments/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // GET https://api.todoist.com/rest/v1/labels
+  // GET https://api.todoist.com/rest/v2/labels
   Todoist.prototype.getAllLabels = function() {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/labels`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/labels`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/labels
+  // POST https://api.todoist.com/rest/v2/labels
   Todoist.prototype.createLabel = function(name, order, color, favorite) {
     // * name     String  Yes Name of the label.
     // * order    Integer No  Label order.
@@ -502,19 +502,19 @@ const Todoist = (function() {
     if (favorite != null) {
       data.favorite = favorite;
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/labels`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/labels`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // GET https://api.todoist.com/rest/v1/labels/2156154810
+  // GET https://api.todoist.com/rest/v2/labels/2156154810
   Todoist.prototype.getLabel = function(id) {
-    return Todoist.xhr('GET', `https://api.todoist.com/rest/v1/labels/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('GET', `https://api.todoist.com/rest/v2/labels/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
-  // POST https://api.todoist.com/rest/v1/labels/2156154810
+  // POST https://api.todoist.com/rest/v2/labels/2156154810
   Todoist.prototype.updateLabel = function(id, name, order, color, favorite) {
     // * name     String  Yes Name of the label.
     // * order    Integer No  Label order.
@@ -533,16 +533,16 @@ const Todoist = (function() {
     if (favorite != null) {
       data.favorite = favorite;
     }
-    return Todoist.xhr('POST', `https://api.todoist.com/rest/v1/labels/${id}`, data, {}, {
+    return Todoist.xhr('POST', `https://api.todoist.com/rest/v2/labels/${id}`, data, {}, {
       'Authorization': `${this.tokenType} ${this.accessToken}`,
       'Content-Type':'application/json',
       'X-Request-Id': Todoist.uuidv4()
     });
   }
 
-  // DELETE https://api.todoist.com/rest/v1/labels/2156154810
+  // DELETE https://api.todoist.com/rest/v2/labels/2156154810
   Todoist.prototype.deleteLabel = function(id) {
-    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v1/labels/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
+    return Todoist.xhr('DELETE', `https://api.todoist.com/rest/v2/labels/${id}`, {}, {}, {'Authorization': `${this.tokenType} ${this.accessToken}`});
   }
 
   return Todoist;

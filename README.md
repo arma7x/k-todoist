@@ -1,10 +1,6 @@
-# KaiKit
+# K-Todoist
+> K-Todoist is a unoffical Todoist client for KaiOS
 
-## JS framework for KaiOS
-
-## TODO DOCUMENTATION
-
-## Licence
+Status: Not working(Oauth Broken)
 
 [MIT](https://opensource.org/licenses/MIT)
-
